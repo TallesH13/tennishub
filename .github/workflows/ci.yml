@@ -1,0 +1,154 @@
+name: CI
+
+# Roda em todo Pull Request para a main e em cada push na main.
+# Os jobs só executam se a pasta correspondente já existir (app/ e api/),
+# então o pipeline funciona desde o primeiro commit e passa a validar
+# o código assim que ele aparece.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  detect:
+    name: Detectar projetos
+    runs-on: ubuntu-latest
+    outputs:
+      app: ${{ steps.d.outputs.app }}
+      api_dart: ${{ steps.d.outputs.api_dart }}
+      api_node: ${{ steps.d.outputs.api_node }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: d
+        run: |
+          [ -f app/pubspec.yaml ]  && echo "app=true"      >> "$GITHUB_OUTPUT" || echo "app=false"      >> "$GITHUB_OUTPUT"
+          [ -f api/pubspec.yaml ]  && echo "api_dart=true" >> "$GITHUB_OUTPUT" || echo "api_dart=false" >> "$GITHUB_OUTPUT"
+          [ -f api/package.json ]  && echo "api_node=true" >> "$GITHUB_OUTPUT" || echo "api_node=false" >> "$GITHUB_OUTPUT"
+
+  app:
+    name: App (Flutter Web)
+    needs: detect
+    if: needs.detect.outputs.app == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Dependências
+        run: flutter pub get
+      - name: Formatação
+        run: dart format --output=none --set-exit-if-changed .
+      - name: Análise estática
+        run: flutter analyze
+      - name: Testes
+        run: flutter test --coverage
+      - name: Build web
+        run: flutter build web --release
+
+  api-dart:
+    name: API (Dart)
+    needs: detect
+    if: needs.detect.outputs.api_dart == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: tennishub_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # Banco descartável do próprio job (não é segredo): usado só pelos testes de integração.
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/tennishub_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+      - name: Dependências
+        run: dart pub get
+      - name: Formatação
+        run: dart format --output=none --set-exit-if-changed .
+      - name: Análise estática
+        run: dart analyze --fatal-infos
+      - name: Testes
+        run: dart test
+
+  api-node:
+    name: API (Node.js)
+    needs: detect
+    if: needs.detect.outputs.api_node == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: tennishub_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/tennishub_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+      - name: Dependências
+        run: npm ci
+      - name: Lint
+        run: npm run lint --if-present
+      - name: Build
+        run: npm run build --if-present
+      - name: Testes
+        run: npm test
+
+  # Check único e estável para exigir na proteção da branch main.
+  # Jobs ignorados (projeto ainda inexistente) contam como sucesso; falha ou cancelamento reprovam.
+  ci-ok:
+    name: CI OK
+    if: always()
+    needs: [detect, app, api-dart, api-node]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verificar resultado
+        run: |
+          echo "Resultados: ${{ join(needs.*.result, ', ') }}"
+          if [ "${{ contains(needs.*.result, 'failure') }}" = "true" ] || [ "${{ contains(needs.*.result, 'cancelled') }}" = "true" ]; then
+            echo "Algum job falhou."; exit 1
+          fi
