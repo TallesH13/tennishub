@@ -24,14 +24,12 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       app: ${{ steps.d.outputs.app }}
-      api_dart: ${{ steps.d.outputs.api_dart }}
       api_node: ${{ steps.d.outputs.api_node }}
     steps:
       - uses: actions/checkout@v4
       - id: d
         run: |
           [ -f app/pubspec.yaml ]  && echo "app=true"      >> "$GITHUB_OUTPUT" || echo "app=false"      >> "$GITHUB_OUTPUT"
-          [ -f api/pubspec.yaml ]  && echo "api_dart=true" >> "$GITHUB_OUTPUT" || echo "api_dart=false" >> "$GITHUB_OUTPUT"
           [ -f api/package.json ]  && echo "api_node=true" >> "$GITHUB_OUTPUT" || echo "api_node=false" >> "$GITHUB_OUTPUT"
 
   app:
@@ -59,47 +57,8 @@ jobs:
       - name: Build web
         run: flutter build web --release
 
-  api-dart:
-    name: API (Dart)
-    needs: detect
-    if: needs.detect.outputs.api_dart == 'true'
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: api
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: tennishub_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-    env:
-      # Banco descartável do próprio job (não é segredo): usado só pelos testes de integração.
-      DATABASE_URL: postgres://postgres:postgres@localhost:5432/tennishub_test
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dart-lang/setup-dart@v1
-        with:
-          sdk: stable
-      - name: Dependências
-        run: dart pub get
-      - name: Formatação
-        run: dart format --output=none --set-exit-if-changed .
-      - name: Análise estática
-        run: dart analyze --fatal-infos
-      - name: Testes
-        run: dart test
-
   api-node:
-    name: API (Node.js)
+    name: API (Node.js + TypeScript)
     needs: detect
     if: needs.detect.outputs.api_node == 'true'
     runs-on: ubuntu-latest
@@ -143,7 +102,7 @@ jobs:
   ci-ok:
     name: CI OK
     if: always()
-    needs: [detect, app, api-dart, api-node]
+    needs: [detect, app, api-node]
     runs-on: ubuntu-latest
     steps:
       - name: Verificar resultado
