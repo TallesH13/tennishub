@@ -12,4 +12,4 @@ Closes #
 - [ ] Testes novos/atualizados e bateria completa passando (`dart format`, `flutter analyze`, `flutter test`)
 - [ ] Sem segredos / dados pessoais reais no commit
 - [ ] Documentação atualizada (se aplicável)
-- [ ] Revisão solicitada a outro integrante
+- [ ] Revisão pedida a outro integrante (recomendado)
