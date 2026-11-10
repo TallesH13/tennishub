@@ -7,7 +7,7 @@ Sistema web (Flutter) para agendamento de quadras de tênis. Projeto da discipli
 
 ## Equipe
 
-Lucas Lucio Silva Caixeta · Mateus Serretti Mendes Peixoto · Samuel Patrick Lopes de Oliveira · Talles Henrique Furtunato Lima (gerente de projeto) · Tulio Vilela Lopes
+Lucas Lucio Silva Caixeta · Mateus Serretti Mendes Peixoto · Samuel Patrick Lopes de Oliveira · Talles Henrique Furtunato Lima · Tulio Vilela Lopes
 
 ## Documentação
 
