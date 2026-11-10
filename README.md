@@ -18,19 +18,20 @@ Lucas Lucio Silva Caixeta · Mateus Serretti Mendes Peixoto · Samuel Patrick Lo
 
 ```
 app/    Flutter Web (cliente e painel do proprietário)
-api/    Backend REST + migrations (PostgreSQL / Neon)
+api/    Backend REST em Node.js + TypeScript, com migrations (PostgreSQL)
 docs/   Requisitos e histórias de usuário
 ```
 
 ## Tecnologias
 
 - Frontend: Flutter (Web)
-- Banco de dados: PostgreSQL (Neon)
-- Comunicação: API REST
+- Backend: Node.js + TypeScript (API REST)
+- Banco de dados: PostgreSQL
+- Execução: 100% local, sem hospedagem
 
 ## Integração contínua
 
-Todo Pull Request para a `main` executa o pipeline do GitHub Actions (`.github/workflows/ci.yml`): formatação, análise estática, testes e build do app Flutter, e lint/testes da API. A branch `main` só recebe merge com o check **CI OK** aprovado.
+Todo Pull Request para a `main` executa o pipeline do GitHub Actions (`.github/workflows/ci.yml`): formatação, análise estática, testes e build do app Flutter, e lint, build e testes da API. A branch `main` só recebe merge com o check **CI OK** aprovado.
 
 ## Como rodar
 
