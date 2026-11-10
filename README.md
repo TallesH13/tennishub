@@ -33,6 +33,12 @@ docs/   Requisitos e histórias de usuário
 
 Todo Pull Request para a `main` executa o pipeline do GitHub Actions (`.github/workflows/ci.yml`): formatação, análise estática, testes e build do app Flutter, e lint, build e testes da API. A branch `main` só recebe merge com o check **CI OK** aprovado.
 
+## Pré-requisitos
+
+- Flutter (canal stable) e Google Chrome
+- Node.js 24 (LTS) e npm
+- PostgreSQL 16
+
 ## Como rodar
 
 > Será preenchido conforme o app e a API forem sendo criados.
