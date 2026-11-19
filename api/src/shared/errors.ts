@@ -46,7 +46,9 @@ export function zodToFieldErrors(error: ZodError): FieldError[] {
 }
 
 function body(code: string, message: string, details?: unknown): ErrorBody {
-  return details === undefined ? { error: { code, message } } : { error: { code, message, details } };
+  return details === undefined
+    ? { error: { code, message } }
+    : { error: { code, message, details } };
 }
 
 /** Registra o tratamento centralizado de erros e de rota inexistente. */
@@ -64,7 +66,11 @@ export function registerErrorHandling(app: FastifyInstance): void {
 
     const fastifyError = error as FastifyError;
     // Erros do próprio Fastify (JSON malformado, corpo grande demais etc.) já trazem status 4xx.
-    if (fastifyError.statusCode && fastifyError.statusCode >= 400 && fastifyError.statusCode < 500) {
+    if (
+      fastifyError.statusCode &&
+      fastifyError.statusCode >= 400 &&
+      fastifyError.statusCode < 500
+    ) {
       return reply
         .status(fastifyError.statusCode)
         .send(body(fastifyError.code ?? 'BAD_REQUEST', fastifyError.message));

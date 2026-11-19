@@ -8,7 +8,10 @@ const envSchema = z.object({
   DATABASE_URL: z
     .string()
     .min(1, 'DATABASE_URL é obrigatória')
-    .refine((value) => /^postgres(ql)?:\/\//.test(value), 'DATABASE_URL deve começar com postgres://'),
+    .refine(
+      (value) => /^postgres(ql)?:\/\//.test(value),
+      'DATABASE_URL deve começar com postgres://',
+    ),
   // Vazia vira undefined: as migrations caem na DATABASE_URL.
   DATABASE_URL_DIRECT: z
     .string()
