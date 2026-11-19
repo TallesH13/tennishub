@@ -16,15 +16,26 @@ npm install
 cp .env.example .env        # preencha com a sua branch do Neon
 ```
 
-| Variável              | Obrigatória | Para que serve                                                                         |
-| --------------------- | ----------- | -------------------------------------------------------------------------------------- |
-| `DATABASE_URL`        | sim         | Conexão usada pela API. No Neon, a string do **pooler**.                               |
-| `DATABASE_URL_DIRECT` | não         | Conexão **direta** do Neon, usada só pelas migrations. Se vazia, usa a `DATABASE_URL`. |
-| `SESSION_SECRET`      | sim         | Segredo da sessão do proprietário (mínimo 32 caracteres).                              |
-| `PORT` / `HOST`       | não         | Padrão `3000` / `127.0.0.1`.                                                           |
-| `LOG_LEVEL`           | não         | Padrão `info`.                                                                         |
+| Variável                                        | Obrigatória | Para que serve                                                                         |
+| ----------------------------------------------- | ----------- | -------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                                  | sim         | Conexão usada pela API. No Neon, a string do **pooler**.                               |
+| `DATABASE_URL_DIRECT`                           | não         | Conexão **direta** do Neon, usada só pelas migrations. Se vazia, usa a `DATABASE_URL`. |
+| `SESSION_SECRET`                                | sim         | Segredo da sessão do proprietário (mínimo 32 caracteres).                              |
+| `PORT` / `HOST`                                 | não         | Padrão `3000` / `127.0.0.1`.                                                           |
+| `LOG_LEVEL`                                     | não         | Padrão `info`.                                                                         |
+| `OWNER_NAME` / `OWNER_EMAIL` / `OWNER_PASSWORD` | só no seed  | Proprietário criado pelo `npm run seed` (D09). A senha é gravada em hash (bcrypt).     |
 
 O `.env` nunca vai para o Git. Strings de conexão só ficam em variáveis de ambiente (D16).
+
+### Primeira execução no seu banco
+
+```bash
+npm run migrate   # cria as tabelas (usa a conexão direta do Neon)
+npm run seed      # cria o proprietário e, se o banco estiver vazio, quadras, horários e 2 reservas de exemplo
+npm run dev
+```
+
+O seed pode ser rodado de novo: ele atualiza o proprietário (inclusive a senha) e não duplica quadras. O modelo de dados está em [`docs/modelo-de-dados.md`](../docs/modelo-de-dados.md).
 
 ### Banco de teste local
 
@@ -50,6 +61,7 @@ No CI, o banco `tennishub_test` sobe como serviço do próprio job.
 | `npm test`             | Recria o banco de teste, aplica as migrations e roda os testes de unidade e integração. |
 | `npm run migrate`      | Aplica as migrations pendentes (usa `DATABASE_URL_DIRECT`).                             |
 | `npm run migrate:down` | Desfaz a última migration.                                                              |
+| `npm run seed`         | Cria/atualiza o proprietário a partir do `.env` e insere dados de exemplo.              |
 
 Antes de abrir um PR: `npm run lint && npm run typecheck && npm test`.
 
@@ -60,7 +72,7 @@ src/
   app.ts            monta o Fastify (sem abrir porta), registra erros e rotas em /api
   server.ts         ponto de entrada: lê o .env, cria o pool e sobe o servidor
   config/env.ts     validação das variáveis de ambiente com Zod
-  db/               pool, transação e runner das migrations
+  db/               pool, transação, runner das migrations e seed
   shared/errors.ts  erros de negócio e tratamento centralizado
   modules/<assunto>/
     *.routes.ts       camada HTTP (entrada e saída)
