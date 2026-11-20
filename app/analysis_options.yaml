@@ -20,3 +20,9 @@ linter:
     - prefer_single_quotes
     - unawaited_futures
     - use_super_parameters
+    # Segurança e robustez
+    - avoid_catches_without_on_clauses
+    - avoid_dynamic_calls
+    - cancel_subscriptions
+    - close_sinks
+    - only_throw_errors
