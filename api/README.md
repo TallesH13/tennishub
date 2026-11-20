@@ -16,16 +16,30 @@ npm install
 cp .env.example .env        # preencha com a sua branch do Neon
 ```
 
-| Variável                                        | Obrigatória | Para que serve                                                                         |
-| ----------------------------------------------- | ----------- | -------------------------------------------------------------------------------------- |
-| `DATABASE_URL`                                  | sim         | Conexão usada pela API. No Neon, a string do **pooler**.                               |
-| `DATABASE_URL_DIRECT`                           | não         | Conexão **direta** do Neon, usada só pelas migrations. Se vazia, usa a `DATABASE_URL`. |
-| `SESSION_SECRET`                                | sim         | Segredo da sessão do proprietário (mínimo 32 caracteres).                              |
-| `PORT` / `HOST`                                 | não         | Padrão `3000` / `127.0.0.1`.                                                           |
-| `LOG_LEVEL`                                     | não         | Padrão `info`.                                                                         |
-| `OWNER_NAME` / `OWNER_EMAIL` / `OWNER_PASSWORD` | só no seed  | Proprietário criado pelo `npm run seed` (D09). A senha é gravada em hash (bcrypt).     |
+| Variável                                        | Obrigatória | Para que serve                                                                                                                                          |
+| ----------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                                  | sim         | Conexão usada pela API. No Neon, a string do **pooler** (host com `-pooler`).                                                                           |
+| `DATABASE_URL_DIRECT`                           | com Neon    | Conexão **direta** do Neon, usada pelas migrations e pelo seed. Obrigatória quando a `DATABASE_URL` usa o pooler; no PostgreSQL local pode ficar vazia. |
+| `SESSION_SECRET`                                | sim         | Segredo da sessão do proprietário (mínimo 32 caracteres).                                                                                               |
+| `PORT` / `HOST`                                 | não         | Padrão `3000` / `127.0.0.1`.                                                                                                                            |
+| `LOG_LEVEL`                                     | não         | Padrão `info`.                                                                                                                                          |
+| `OWNER_NAME` / `OWNER_EMAIL` / `OWNER_PASSWORD` | só no seed  | Proprietário criado pelo `npm run seed` (D09). A senha é gravada em hash (bcrypt).                                                                      |
 
 O `.env` nunca vai para o Git. Strings de conexão só ficam em variáveis de ambiente (D16).
+
+### Conectando ao Neon
+
+1. No [console do Neon](https://console.neon.tech), abra o projeto do grupo e crie **uma branch para você** (Branches > New branch). Cada integrante usa a própria branch, para ninguém apagar os dados do outro.
+2. Na sua branch, clique em **Connect**:
+   - com **Connection pooling** ligado, copie a string para `DATABASE_URL` (o host termina em `-pooler`);
+   - com **Connection pooling** desligado, copie a string para `DATABASE_URL_DIRECT`.
+3. Cole as strings como o Neon gera, com `sslmode=require&channel_binding=require`. A API liga o TLS sozinha para qualquer host `*.neon.tech` e valida o certificado.
+
+Por que duas conexões: o pooler do Neon (PgBouncer em modo transação) aguenta muitas conexões da API, mas não mantém estado de sessão. As migrations precisam da conexão direta, e a API recusa rodá-las pelo pooler. As travas de concorrência das reservas rodam sempre dentro de transação (`pg_advisory_xact_lock`), o que funciona no pooler (D16).
+
+No plano gratuito, o Neon "dorme" depois de alguns minutos sem uso e a primeira consulta leva alguns segundos (D17). A API espera até 15 s pela conexão. Antes da apresentação e das medições de desempenho, acorde o banco com `GET /api/health`.
+
+Sem internet, o plano B é o PostgreSQL local: troque a `DATABASE_URL` por `postgres://postgres:postgres@localhost:5432/tennishub` e deixe a `DATABASE_URL_DIRECT` vazia.
 
 ### Primeira execução no seu banco
 

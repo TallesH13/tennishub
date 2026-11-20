@@ -1,6 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import { runner } from 'node-pg-migrate';
 import { loadEnvFile } from '../config/env.js';
+import { connectionConfig, describeConnection } from './connection.js';
 
 export const MIGRATIONS_DIR = fileURLToPath(new URL('../../migrations', import.meta.url));
 
@@ -13,9 +14,17 @@ export type MigrateOptions = {
 };
 
 export async function migrate(options: MigrateOptions): Promise<string[]> {
+  if (describeConnection(options.databaseUrl).isPooler) {
+    // O pooler do Neon (PgBouncer em modo transação) não serve para DDL nem para a
+    // trava que o node-pg-migrate usa; as migrations precisam da conexão direta (D16).
+    throw new Error(
+      'As migrations não podem usar o pooler do Neon (host com "-pooler"). Defina DATABASE_URL_DIRECT com a conexão direta.',
+    );
+  }
+
   const direction = options.direction ?? 'up';
   const applied = await runner({
-    databaseUrl: options.databaseUrl,
+    databaseUrl: connectionConfig(options.databaseUrl),
     dir: MIGRATIONS_DIR,
     direction,
     count: options.count ?? (direction === 'up' ? Infinity : 1),

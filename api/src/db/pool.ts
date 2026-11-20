@@ -1,4 +1,5 @@
 import pg from 'pg';
+import { connectionConfig } from './connection.js';
 
 /** O mínimo que a camada de dados precisa: facilita trocar o pool por um client de transação. */
 export type Queryable = Pick<pg.Pool, 'query'>;
@@ -10,11 +11,13 @@ pg.types.setTypeParser(pg.types.builtins.DATE, (value) => value);
 
 export function createPool(connectionString: string): pg.Pool {
   return new pg.Pool({
-    connectionString,
+    ...connectionConfig(connectionString),
     max: 10,
-    idleTimeoutMillis: 30_000,
-    // O Neon pode estar "dormindo" no plano gratuito (D17): dá folga para acordar.
-    connectionTimeoutMillis: 10_000,
+    // O pooler do Neon já reaproveita conexões; não há por que segurar ociosas por muito tempo.
+    idleTimeoutMillis: 10_000,
+    // O Neon "dorme" no plano gratuito (D17) e leva alguns segundos para acordar.
+    connectionTimeoutMillis: 15_000,
+    keepAlive: true,
     application_name: 'tennishub-api',
   });
 }

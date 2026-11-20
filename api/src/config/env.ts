@@ -1,4 +1,9 @@
 import { z } from 'zod';
+import { describeConnection } from '../db/connection.js';
+
+function isPostgresUrl(value: string): boolean {
+  return /^postgres(ql)?:\/\//.test(value) && URL.canParse(value);
+}
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -8,15 +13,16 @@ const envSchema = z.object({
   DATABASE_URL: z
     .string()
     .min(1, 'DATABASE_URL é obrigatória')
-    .refine(
-      (value) => /^postgres(ql)?:\/\//.test(value),
-      'DATABASE_URL deve começar com postgres://',
-    ),
+    .refine(isPostgresUrl, 'DATABASE_URL deve ser uma URL postgres://usuario:senha@host/banco'),
   // Vazia vira undefined: as migrations caem na DATABASE_URL.
   DATABASE_URL_DIRECT: z
     .string()
     .optional()
-    .transform((value) => (value ? value : undefined)),
+    .transform((value) => (value ? value : undefined))
+    .refine(
+      (value) => value === undefined || isPostgresUrl(value),
+      'DATABASE_URL_DIRECT deve ser uma URL postgres://usuario:senha@host/banco',
+    ),
   SESSION_SECRET: z.string().min(32, 'SESSION_SECRET deve ter pelo menos 32 caracteres'),
 });
 
@@ -37,6 +43,25 @@ export class ConfigError extends Error {
   }
 }
 
+/**
+ * No Neon, a API usa o pooler e as migrations usam a conexão direta (D16).
+ * Pega as trocas mais comuns antes que virem erro difícil de entender.
+ */
+function checkNeonUrls(databaseUrl: string, directUrl: string | undefined): string[] {
+  const problems: string[] = [];
+  const app = describeConnection(databaseUrl);
+
+  if (app.isPooler && !directUrl) {
+    problems.push(
+      'DATABASE_URL_DIRECT: obrigatória quando a DATABASE_URL usa o pooler do Neon (as migrations precisam da conexão direta)',
+    );
+  }
+  if (directUrl && describeConnection(directUrl).isPooler) {
+    problems.push('DATABASE_URL_DIRECT: use a conexão direta do Neon, sem "-pooler" no host');
+  }
+  return problems;
+}
+
 /** Lê e valida as variáveis de ambiente. Falha cedo, listando tudo que está errado. */
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const parsed = envSchema.safeParse(env);
@@ -47,6 +72,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   }
 
   const data = parsed.data;
+  const neonProblems = checkNeonUrls(data.DATABASE_URL, data.DATABASE_URL_DIRECT);
+  if (neonProblems.length > 0) throw new ConfigError(neonProblems);
+
   return {
     nodeEnv: data.NODE_ENV,
     host: data.HOST,
