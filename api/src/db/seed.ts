@@ -121,16 +121,15 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   }
 
   const pool = createPool(databaseUrl);
-  Promise.resolve()
-    .then(() => seed(pool, ownerFromEnv()))
-    .then((result) => {
-      console.log(
-        `Seed concluído: proprietário #${result.ownerId}, ${result.courtsCreated} quadra(s) e ${result.bookingsCreated} reserva(s) de exemplo criadas.`,
-      );
-    })
-    .catch((error: unknown) => {
-      console.error(error instanceof Error ? error.message : error);
-      process.exitCode = 1;
-    })
-    .finally(() => pool.end());
+  try {
+    const result = await seed(pool, ownerFromEnv());
+    console.log(
+      `Seed concluído: proprietário #${result.ownerId}, ${result.courtsCreated} quadra(s) e ${result.bookingsCreated} reserva(s) de exemplo criadas.`,
+    );
+  } catch (error: unknown) {
+    console.error(error instanceof Error ? error.message : error);
+    process.exitCode = 1;
+  } finally {
+    await pool.end();
+  }
 }

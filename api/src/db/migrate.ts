@@ -47,14 +47,11 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     process.exit(1);
   }
 
-  migrate({ databaseUrl, direction, log: (message) => console.log(message) })
-    .then((names) => {
-      console.log(
-        names.length ? `Migrations (${direction}): ${names.join(', ')}` : 'Nada a migrar.',
-      );
-    })
-    .catch((error: unknown) => {
-      console.error(error);
-      process.exit(1);
-    });
+  try {
+    const names = await migrate({ databaseUrl, direction, log: (message) => console.log(message) });
+    console.log(names.length ? `Migrations (${direction}): ${names.join(', ')}` : 'Nada a migrar.');
+  } catch (error: unknown) {
+    console.error(error);
+    process.exit(1);
+  }
 }

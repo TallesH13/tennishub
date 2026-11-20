@@ -30,11 +30,9 @@ async function main(): Promise<void> {
   await app.listen({ host: config.host, port: config.port });
 }
 
-main().catch((error: unknown) => {
-  if (error instanceof ConfigError) {
-    console.error(error.message);
-  } else {
-    console.error(error);
-  }
+try {
+  await main();
+} catch (error: unknown) {
+  console.error(error instanceof ConfigError ? error.message : error);
   process.exit(1);
-});
+}
