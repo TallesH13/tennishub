@@ -30,6 +30,18 @@ class AdminHomePage extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           const Text('Gestão de quadras, horários, agendamentos e relatórios.'),
           const SizedBox(height: AppSpacing.lg),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.bar_chart_outlined),
+              title: const Text('Relatório de locações'),
+              subtitle: const Text(
+                'Locações realizadas por período, com os clientes.',
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.go(AppRoutes.adminReports),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
           const Card(
             child: Padding(
               padding: EdgeInsets.all(AppSpacing.lg),
