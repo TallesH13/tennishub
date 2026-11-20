@@ -64,20 +64,22 @@ No CI não há `.env`: o banco `tennishub_test` sobe como serviço do job e cheg
 
 ## Scripts
 
-| Comando                | O que faz                                                                               |
-| ---------------------- | --------------------------------------------------------------------------------------- |
-| `npm run dev`          | Sobe a API em modo de desenvolvimento, recarregando a cada alteração.                   |
-| `npm run build`        | Compila o TypeScript para `dist/`.                                                      |
-| `npm start`            | Roda a versão compilada (`dist/server.js`).                                             |
-| `npm run lint`         | ESLint + verificação de formatação do Prettier.                                         |
-| `npm run format`       | Formata o código com o Prettier.                                                        |
-| `npm run typecheck`    | Checa os tipos sem gerar arquivos.                                                      |
-| `npm test`             | Recria o banco de teste, aplica as migrations e roda os testes de unidade e integração. |
-| `npm run migrate`      | Aplica as migrations pendentes (usa `DATABASE_URL_DIRECT`).                             |
-| `npm run migrate:down` | Desfaz a última migration.                                                              |
-| `npm run seed`         | Cria/atualiza o proprietário a partir do `.env` e insere dados de exemplo.              |
+| Comando                    | O que faz                                                                  |
+| -------------------------- | -------------------------------------------------------------------------- |
+| `npm run dev`              | Sobe a API em modo de desenvolvimento, recarregando a cada alteração.      |
+| `npm run build`            | Compila o TypeScript para `dist/`.                                         |
+| `npm start`                | Roda a versão compilada (`dist/server.js`).                                |
+| `npm run lint`             | ESLint + verificação de formatação do Prettier.                            |
+| `npm run format`           | Formata o código com o Prettier.                                           |
+| `npm run typecheck`        | Checa os tipos sem gerar arquivos.                                         |
+| `npm test`                 | Roda todos os testes (unidade e integração). É o que o CI executa.         |
+| `npm run test:unit`        | Só os testes de unidade, sem banco de dados.                               |
+| `npm run test:integration` | Só os testes de integração; exige a `TEST_DATABASE_URL`.                   |
+| `npm run migrate`          | Aplica as migrations pendentes (usa `DATABASE_URL_DIRECT`).                |
+| `npm run migrate:down`     | Desfaz a última migration.                                                 |
+| `npm run seed`             | Cria/atualiza o proprietário a partir do `.env` e insere dados de exemplo. |
 
-Antes de abrir um PR: `npm run lint && npm run typecheck && npm test`.
+Antes de abrir um PR: `npm run lint && npm run typecheck && npm test`. Sem banco de teste configurado, rode `npm run test:unit`; a integração roda no CI.
 
 ## Estrutura
 

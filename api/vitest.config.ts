@@ -9,11 +9,26 @@ try {
 
 export default defineConfig({
   test: {
-    include: ['test/**/*.test.ts'],
-    globalSetup: ['test/setup/global-setup.ts'],
-    // Os testes de integração compartilham o mesmo banco: um arquivo por vez.
-    fileParallelism: false,
     testTimeout: 20_000,
     hookTimeout: 30_000,
+    // Os testes de integração compartilham o mesmo banco: um arquivo por vez.
+    fileParallelism: false,
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'unit',
+          include: ['test/unit/**/*.test.ts'],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'integration',
+          include: ['test/integration/**/*.test.ts'],
+          globalSetup: ['test/setup/global-setup.ts'],
+        },
+      },
+    ],
   },
 });
