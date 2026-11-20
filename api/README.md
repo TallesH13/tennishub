@@ -53,14 +53,14 @@ O seed pode ser rodado de novo: ele atualiza o proprietário (inclusive a senha)
 
 ### Banco de teste local
 
-Os testes de integração usam um PostgreSQL real. Por segurança, **só rodam em bancos cujo nome termina em `_test`**, porque apagam e recriam o schema a cada execução.
+Os testes leem o `api/.env` e usam a variável `TEST_DATABASE_URL`, nunca o banco da API. Por segurança, **só rodam em bancos cujo nome termina em `_test`**, porque apagam e recriam o schema a cada execução.
 
-```bash
-createdb tennishub_test
-echo "DATABASE_URL=postgres://postgres:postgres@localhost:5432/tennishub_test" > .env.test
-```
+Duas formas de ter esse banco:
 
-No CI, o banco `tennishub_test` sobe como serviço do próprio job.
+- **Neon:** na sua branch, crie o banco `tennishub_test` (Databases > New database) e use a string da **conexão direta** (sem `-pooler`), porque os testes rodam migrations.
+- **Local:** `createdb tennishub_test` e `TEST_DATABASE_URL=postgres://postgres:postgres@localhost:5432/tennishub_test`.
+
+No CI não há `.env`: o banco `tennishub_test` sobe como serviço do job e chega pela `DATABASE_URL`.
 
 ## Scripts
 

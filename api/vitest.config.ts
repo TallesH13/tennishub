@@ -1,10 +1,10 @@
 import { defineConfig } from 'vitest/config';
 
-// Localmente, as variáveis do banco de teste podem ficar em api/.env.test (fora do Git).
+// Localmente, a TEST_DATABASE_URL fica no api/.env (fora do Git).
 try {
-  process.loadEnvFile('.env.test');
+  process.loadEnvFile('.env');
 } catch {
-  // sem .env.test: usa as variáveis já definidas (é o caso do CI)
+  // sem .env: usa as variáveis já definidas (é o caso do CI)
 }
 
 export default defineConfig({
