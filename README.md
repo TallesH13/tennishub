@@ -26,8 +26,8 @@ docs/   Requisitos e histórias de usuário
 
 - Frontend: Flutter (Web)
 - Backend: Node.js + TypeScript (API REST)
-- Banco de dados: PostgreSQL
-- Execução: 100% local, sem hospedagem
+- Banco de dados: PostgreSQL no Neon Serverless
+- Execução: aplicação e API locais, sem hospedagem
 
 ## Integração contínua
 
@@ -37,7 +37,8 @@ Todo Pull Request para a `main` executa o pipeline do GitHub Actions (`.github/w
 
 - Flutter (canal stable) e Google Chrome
 - Node.js 24 (LTS) e npm
-- PostgreSQL 16
+- Conta gratuita no Neon (banco de dados)
+- PostgreSQL 16 local (testes automatizados e plano B)
 
 ## Como rodar
 
