@@ -9,6 +9,12 @@
 # pareça um vazamento aos próprios scanners.
 set -u
 
+# Dentro de um hook de commit, o git define GIT_DIR, GIT_INDEX_FILE etc. Sem limpar,
+# os repositórios temporários destes testes mexeriam no repositório de verdade.
+for git_variable in $(git rev-parse --local-env-vars); do
+  unset "$git_variable"
+done
+
 scripts_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 secrets="$scripts_dir/check-secrets.sh"
 coverage="$scripts_dir/check-coverage.sh"

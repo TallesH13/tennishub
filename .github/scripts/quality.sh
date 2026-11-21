@@ -27,7 +27,7 @@
 set -u
 
 scripts_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-root="$(git -C "$scripts_dir" rev-parse --show-toplevel)" || exit 2
+root="$(git rev-parse --show-toplevel)" || exit 2
 cd "$root" || exit 2
 
 target="all"
@@ -131,10 +131,20 @@ step_app_outdated() {
 
 # --- passos da API -----------------------------------------------------------------
 step_api_install() { need npm && (cd api && npm ci); }
-step_api_typecheck() { need npm && (cd api && npm run typecheck --if-present); }
-step_api_lint() { need npm && (cd api && npm run lint --if-present); }
-step_api_unit() { need npm && (cd api && npm run test:unit --if-present); }
-step_api_integration() { need npm && (cd api && npm run test:integration); }
+
+# Os passos que rodam ferramentas da API precisam das dependências instaladas.
+api_deps() {
+  need npm || return 1
+  if [[ ! -d api/node_modules ]]; then
+    echo "As dependências da API não estão instaladas."
+    echo "Rode: cd api && npm ci   (ou use a opção --install)"
+    return 1
+  fi
+}
+step_api_typecheck() { api_deps && (cd api && npm run typecheck --if-present); }
+step_api_lint() { api_deps && (cd api && npm run lint --if-present); }
+step_api_unit() { api_deps && (cd api && npm run test:unit --if-present); }
+step_api_integration() { api_deps && (cd api && npm run test:integration); }
 step_api_audit_prod() { need npm && (cd api && npm audit --omit=dev --audit-level=high); }
 
 step_api_audit_dev() {
