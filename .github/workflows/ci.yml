@@ -1,15 +1,15 @@
 name: CI
 
-# Roda em todo Pull Request para a main e em cada push na main.
+# Roda em todo Pull Request para a develop ou a main e em cada push nessas branches.
 # Os jobs só executam se a pasta correspondente já existir (app/ e api/),
 # então o pipeline funciona desde o primeiro commit e passa a validar
 # o código assim que ele aparece.
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, develop]
   push:
-    branches: [main]
+    branches: [main, develop]
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
