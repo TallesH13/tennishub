@@ -7,7 +7,8 @@ Base: Documento de Visão, versão 6.0 (29/10/2026), com as revisões de 10/11/2
 | Data | Versão | Descrição |
 |---|---|---|
 | 29/10/2026 | 6.0 | Documento de Visão: requisitos do enunciado como RF, módulos complementares como premissa |
-| 10/11/2026 | 6.1 | Decisões do grupo: backend em Node.js + TypeScript, PostgreSQL local no lugar do Neon, execução 100% local sem hospedagem, HTTPS apenas em implantação real, premissas adicionais D01 a D14 |
+| 10/11/2026 | 6.1 | Decisões do grupo: backend em Node.js + TypeScript, execução local sem hospedagem, HTTPS apenas em implantação real, premissas adicionais D01 a D14 |
+| 12/11/2026 | 6.2 | Banco de dados no Neon Serverless (plano gratuito), com PostgreSQL local para testes automatizados e plano B da apresentação; premissas D15 a D17 |
 
 Os requisitos RF01 a RF10 formam o escopo desta versão (MVP): RF01 a RF03, RF05 a RF08 e RF10 vêm do enunciado do trabalho; RF04 e RF09 foram definidos pelo grupo. Os requisitos RF11 a RF17 são dos módulos complementares (premissa "Funcionalidades Definidas pelo Grupo"). Entre parênteses estão as histórias de usuário que detalham cada requisito.
 
@@ -55,19 +56,19 @@ Os requisitos RF01 a RF10 formam o escopo desta versão (MVP): RF01 a RF03, RF05
 
 ## Perspectiva do produto
 
-É um produto de ambiente Web, executado localmente na máquina do grupo, sem hospedagem. Ele centraliza as operações do estabelecimento esportivo sem depender de sistemas externos, integrando a interface do cliente e o painel do proprietário em uma única plataforma online, preparada para receber os módulos complementares (como a gamificação).
+É um produto de ambiente Web, com aplicação e API executadas localmente na máquina do grupo, sem hospedagem, e banco de dados no Neon Serverless. Ele centraliza as operações do estabelecimento esportivo sem depender de sistemas externos, integrando a interface do cliente e o painel do proprietário em uma única plataforma online, preparada para receber os módulos complementares (como a gamificação).
 
 - **Interfaces de usuário:** aplicação Web responsiva desenvolvida em Flutter, acessível por navegadores.
 - **Interfaces de hardware:** computadores com acesso à internet.
-- **Interface de software:** comunicação da aplicação em Flutter com o backend em Node.js + TypeScript via API REST, integrado ao banco de dados relacional PostgreSQL local para persistência e sincronização de dados de agendamentos (e, nos módulos complementares, estoque e ranking). A atualização da grade de horários é feita por consulta periódica, com validação final no servidor. O backend serve o build do Flutter Web, de modo que o sistema abre em um único endereço local.
+- **Interface de software:** comunicação da aplicação em Flutter com o backend em Node.js + TypeScript via API REST, integrado ao banco de dados relacional PostgreSQL no Neon Serverless para persistência e sincronização de dados de agendamentos (e, nos módulos complementares, estoque e ranking). A atualização da grade de horários é feita por consulta periódica, com validação final no servidor. O backend serve o build do Flutter Web, de modo que o sistema abre em um único endereço local.
 
 ## Premissas
 
-- **Conectividade:** o sistema, o banco de dados e a demonstração rodam localmente, sem depender de internet; a internet é necessária apenas para o desenvolvimento (dependências e repositório).
+- **Conectividade:** a aplicação e a API rodam localmente e o banco de dados fica no Neon Serverless; por isso o desenvolvimento e a demonstração dependem de internet para acessar o banco. O plano B da apresentação usa um PostgreSQL local.
 - **Adoção Operacional:** o proprietário alimentará o banco de dados com as informações de horários disponíveis, itens do almoxarifado e catálogo da loja.
 - **Suporte do Framework:** o framework Flutter Web manterá compatibilidade estável com os principais navegadores do mercado durante todo o ciclo de vida do projeto.
 - **Disponibilidade da Equipe:** os integrantes do projeto terão disponibilidade para cumprir as entregas dentro do cronograma acadêmico da disciplina, dedicando em média 2 horas por dia útil ao projeto (base do cronograma e da planilha de custos).
-- **Execução Local:** o grupo decidiu não usar hospedagem. Banco, API e aplicação rodam na máquina do grupo, inclusive na apresentação ao professor, com um comando de inicialização e plano B (vídeo gravado e segunda máquina).
+- **Execução Local:** o grupo decidiu não usar hospedagem. API e aplicação rodam na máquina do grupo, inclusive na apresentação ao professor, com um comando de inicialização. O banco fica no Neon; o plano B é um PostgreSQL local com as mesmas migrations, além de vídeo gravado e segunda máquina.
 - **Uso em Computador:** o sistema será utilizado principalmente em navegadores de computadores (Desktop/PC).
 - **Identificação do Cliente:** como o cliente não cria conta, ele é identificado pelo telefone informado no agendamento. O limite de 2 agendamentos por dia é controlado por esse telefone, e cada reserva recebe um código usado para cancelar ou remarcar.
 - **Pagamento e Avisos:** o pagamento é feito no local, diretamente ao proprietário, e os avisos de realocação de horário são feitos pelo telefone cadastrado.
@@ -94,11 +95,14 @@ Decisões da equipe para os pontos em que o Documento de Visão é omisso ou inc
 | D12 | Relatório em PDF (HU11 cita, RF10 não) | Relatório em tela e exportação em PDF. |
 | D13 | "Tempo real" do RF01 | Atualização por consulta periódica (ex.: 15 s), com validação final no servidor. |
 | D14 | Prazo: o cronograma original previa o desenvolvimento até 13/11 | Replanejado em 4 ciclos (até 13/11, 20/11, 27/11 e 04/12), usando a reserva de 01 a 04/12. |
+| D15 | Banco de dados | Neon Serverless (plano gratuito) como banco principal; PostgreSQL local para testes automatizados e plano B da apresentação, trocando só a `DATABASE_URL`. |
+| D16 | Acesso ao banco | String de conexão só em variável de ambiente, nunca no repositório; uma branch do Neon por integrante; conexão direta nas migrations; travas de concorrência dentro de transação (`pg_advisory_xact_lock`), por causa do pooler do Neon. |
+| D17 | Primeira consulta lenta no Neon | O banco "dorme" no plano gratuito; acordá-lo antes da apresentação e das medições de desempenho (RNF03). |
 
 ## Restrições
 
-- **Tecnológica:** o desenvolvimento do frontend deve utilizar estritamente o framework Flutter direcionado para a plataforma Web. O backend usa Node.js com TypeScript e o banco de dados é o PostgreSQL.
-- **Prazo e custos:** a entrega do sistema está restrita ao calendário letivo do semestre (entrega final até 06/12/2026), com custo zero de infraestrutura: execução local, sem hospedagem.
+- **Tecnológica:** o desenvolvimento do frontend deve utilizar estritamente o framework Flutter direcionado para a plataforma Web. O backend usa Node.js com TypeScript e o banco de dados é o PostgreSQL no Neon Serverless.
+- **Prazo e custos:** a entrega do sistema está restrita ao calendário letivo do semestre (entrega final até 06/12/2026), com custo zero de infraestrutura: execução local, sem hospedagem, e banco no plano gratuito do Neon.
 - **Segurança de Acesso:** o acesso de escrita (gestão de quadras e agendamentos e, nos módulos complementares, almoxarifado e pontuação do ranking) é restrito aos proprietários via login e senha.
 - **Consulta Pública:** a visualização de quadras e horários não pode exigir cadastro ou login, garantindo zero atrito no primeiro acesso do cliente.
 - **Equipe:** composta por no máximo 5 pessoas.
