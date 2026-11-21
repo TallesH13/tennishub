@@ -31,7 +31,7 @@ docs/   Requisitos e histórias de usuário
 
 ## Integração contínua
 
-Todo Pull Request para a `main` executa o pipeline do GitHub Actions (`.github/workflows/ci.yml`): formatação, análise estática, testes e build do app Flutter, e lint, build e testes da API. A branch `main` só recebe merge com o check **CI OK** aprovado.
+Todo Pull Request para a `develop` ou a `main` executa o pipeline do GitHub Actions (`.github/workflows/ci.yml`): formatação, análise estática, testes e build do app Flutter, e lint, build e testes da API. As branches `develop` e `main` só recebem merge com o check **CI OK** aprovado.
 
 ## Qualidade e segurança
 
