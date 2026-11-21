@@ -9,7 +9,9 @@ class FakeAuthRepository implements AuthRepository {
   FakeAuthRepository({this.latency = Duration.zero});
 
   static const String email = 'proprietario@tennishub.com';
-  static const String password = 'tennishub123'; // Só do modo falso. secret-scan:ignore
+
+  /// Senha só do modo falso, não é a senha real da API.
+  static const String password = 'tennishub123'; // secret-scan:ignore
   static const Owner owner = Owner(
     id: '1',
     name: 'Proprietário TennisHub',
