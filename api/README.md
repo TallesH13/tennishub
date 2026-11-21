@@ -126,6 +126,10 @@ Todos os erros saem no mesmo formato JSON:
 
 Todas as rotas ficam sob o prefixo `/api`.
 
-| Método | Rota          | Descrição                                                                                                           |
-| ------ | ------------- | ------------------------------------------------------------------------------------------------------------------- |
-| `GET`  | `/api/health` | `200 { "status": "ok", "database": "ok" }` quando a API e o banco respondem; `503` se o banco estiver indisponível. |
+| Método | Rota               | Descrição                                                                                                                                                                                          |
+| ------ | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`  | `/api/health`      | `200 { "status": "ok", "database": "ok" }` quando a API e o banco respondem; `503` se o banco estiver indisponível.                                                                                |
+| `POST` | `/api/auth/login`  | Autentica o proprietário com `{ "email", "password" }`, retorna `{ "token", "expiresIn", "owner" }` e grava cookie `HttpOnly` (`tennishub_session`). Bloqueia após 5 falhas em 15 minutos (`429`). |
+| `POST` | `/api/auth/logout` | Encerra a sessão atual do proprietário (`204 No Content`) e limpa o cookie de sessão. Exige sessão válida (`401`).                                                                                 |
+| `GET`  | `/api/auth/me`     | Retorna `{ "owner": { "id", "name", "email" } }` do proprietário autenticado (`200`) ou `401` sem sessão válida.                                                                                   |
+| `GET`  | `/api/owner/me`    | Alias protegido sob `/api/owner/*` que retorna os dados do proprietário autenticado (`200`). Todas as rotas `/api/owner/*` exigem sessão válida e expiram após 30 minutos de inatividade (`401`).  |

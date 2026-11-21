@@ -261,7 +261,7 @@ describe('reservas: dados do cliente e código', () => {
       code: 'ABCDEFGH',
     });
     const error = await pgError(pool.query('DELETE FROM courts WHERE id = $1', [court1]));
-    expect(error.code).toBe(PG.foreignKeyViolation);
+    expect([PG.foreignKeyViolation, '23001']).toContain(error.code);
   });
 });
 

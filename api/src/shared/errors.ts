@@ -24,6 +24,12 @@ export class AppError extends Error {
   }
 }
 
+export class UnauthorizedError extends AppError {
+  constructor(message = 'Autenticação obrigatória.') {
+    super(401, 'UNAUTHORIZED', message);
+  }
+}
+
 export class NotFoundError extends AppError {
   constructor(message = 'Recurso não encontrado.') {
     super(404, 'NOT_FOUND', message);
@@ -33,6 +39,12 @@ export class NotFoundError extends AppError {
 export class ConflictError extends AppError {
   constructor(code: string, message: string) {
     super(409, code, message);
+  }
+}
+
+export class TooManyRequestsError extends AppError {
+  constructor(message = 'Muitas tentativas. Tente novamente mais tarde.') {
+    super(429, 'TOO_MANY_ATTEMPTS', message);
   }
 }
 
