@@ -1,0 +1,92 @@
+name: Qualidade e segurança
+
+# Rotina de qualidade e segurança: segredos, políticas do código, cobertura de
+# testes, auditoria de dependências e build. Os passos ficam em
+# .github/scripts/quality.sh, o mesmo comando que roda no computador de quem
+# desenvolve, para o resultado ser igual nos dois lugares.
+#
+# Roda em Pull Requests, em pushes e toda segunda-feira, para pegar
+# vulnerabilidades novas em dependências mesmo sem mudança no código.
+# É separado do workflow "CI": por ora não é exigido para o merge.
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+  schedule:
+    - cron: '0 11 * * 1' # segundas, 8h em Brasília
+  workflow_dispatch:
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  detect:
+    name: Detectar projetos
+    runs-on: ubuntu-latest
+    outputs:
+      app: ${{ steps.d.outputs.app }}
+      api: ${{ steps.d.outputs.api }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: d
+        run: |
+          [ -f app/pubspec.yaml ] && echo "app=true" >> "$GITHUB_OUTPUT" || echo "app=false" >> "$GITHUB_OUTPUT"
+          [ -f api/package.json ] && echo "api=true" >> "$GITHUB_OUTPUT" || echo "api=false" >> "$GITHUB_OUTPUT"
+
+  repo:
+    name: Repositório (segredos e políticas)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Segredos, políticas e testes dos scripts
+        run: .github/scripts/quality.sh repo
+
+  app:
+    name: App (Flutter)
+    needs: detect
+    if: needs.detect.outputs.app == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Formatação, análise, testes, cobertura e build
+        run: .github/scripts/quality.sh app --only --with-build
+
+  api:
+    name: API (Node.js + TypeScript)
+    needs: detect
+    if: needs.detect.outputs.api == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+      - name: Tipos, lint, testes de unidade e auditoria de dependências
+        run: .github/scripts/quality.sh api --only --install
+
+  # Resultado único, para o caso de o grupo decidir exigir a rotina no merge.
+  # Jobs ignorados (projeto ainda inexistente) contam como sucesso.
+  quality-ok:
+    name: Qualidade OK
+    if: always()
+    needs: [detect, repo, app, api]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verificar resultado
+        run: |
+          echo "Resultados: ${{ join(needs.*.result, ', ') }}"
+          if [ "${{ contains(needs.*.result, 'failure') }}" = "true" ] || [ "${{ contains(needs.*.result, 'cancelled') }}" = "true" ]; then
+            echo "Algum job falhou."; exit 1
+          fi
