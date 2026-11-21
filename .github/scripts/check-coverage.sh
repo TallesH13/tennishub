@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Confere a cobertura de testes de um arquivo lcov (gerado por `flutter test --coverage`).
+# Confere a cobertura de testes de um arquivo lcov (produzido pelo comando `flutter test --coverage`).
 #
 # Uso (dentro de app/): ../.github/scripts/check-coverage.sh [opções]
 #
