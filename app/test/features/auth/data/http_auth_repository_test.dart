@@ -104,4 +104,17 @@ void main() {
       );
     },
   );
+
+  test('sair chama o logout da API', () async {
+    final api = FakeApi(
+      (_) async => jsonResponse(null, 204),
+      token: sampleToken,
+    );
+
+    await HttpAuthRepository(api.client).logout();
+
+    expect(api.lastRequest.method, 'POST');
+    expect(api.lastRequest.url.path, '/api/auth/logout');
+    expect(api.lastRequest.headers['Authorization'], 'Bearer $sampleToken');
+  });
 }

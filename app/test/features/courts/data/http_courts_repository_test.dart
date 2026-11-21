@@ -145,4 +145,100 @@ void main() {
     expect(api.lastRequest.method, 'DELETE');
     expect(api.lastRequest.url.path, '/api/owner/blocks/9');
   });
+
+  test('painel lista todas as quadras e edita uma', () async {
+    final api = FakeApi(
+      (request) async => request.method == 'GET'
+          ? jsonResponse(courtsResponse)
+          : jsonResponse({
+              'court': {
+                'id': 4,
+                'name': 'Quadra 4',
+                'hourlyPriceCents': 7000,
+                'unavailableFrom': '2026-12-15',
+              },
+            }),
+      token: sampleToken,
+    );
+    final repository = HttpCourtsRepository(api.client);
+
+    expect(await repository.listAllCourts(), hasLength(2));
+    expect(api.lastRequest.url.path, '/api/owner/courts');
+
+    final court = await repository.updateCourt(
+      '4',
+      CourtInput(
+        name: 'Quadra 4',
+        hourlyPriceCents: 7000,
+        unavailableFrom: DateTime(2026, 12, 15),
+      ),
+    );
+    expect(api.lastRequest.method, 'PUT');
+    expect(api.lastRequest.url.path, '/api/owner/courts/4');
+    expect(api.lastBody, {
+      'name': 'Quadra 4',
+      'hourlyPriceCents': 7000,
+      'unavailableFrom': '2026-12-15',
+    });
+    expect(court.unavailableFrom, DateTime(2026, 12, 15));
+  });
+
+  test('lê o horário em vigor de uma quadra', () async {
+    final api = FakeApi(
+      (_) async => jsonResponse({
+        'openingHours': openingHoursUpdateResponse['openingHours'],
+      }),
+      token: sampleToken,
+    );
+
+    final hours = await HttpCourtScheduleRepository(api.client)
+        .fetchOpeningHours('2');
+
+    expect(api.lastRequest.url.path, '/api/owner/courts/2/opening-hours');
+    expect(hours?.validFrom, DateTime(2026, 12, 1));
+    expect(hours?.ranges, hasLength(2));
+    expect(hours?.hoursOn(DateTime(2026, 12, 5)), {
+      for (var h = 8; h < 18; h++) h,
+    });
+  });
+
+  test('lista e cria bloqueios', () async {
+    const block = {
+      'id': 9,
+      'courtId': 2,
+      'startsAt': '2026-12-05T11:00:00.000Z',
+      'endsAt': '2026-12-05T15:00:00.000Z',
+      'reason': 'Manutenção do piso',
+    };
+    final api = FakeApi(
+      (request) async => request.method == 'GET'
+          ? jsonResponse({
+              'blocks': [block],
+            })
+          : jsonResponse({'block': block}, 201),
+      token: sampleToken,
+    );
+    final repository = HttpCourtScheduleRepository(api.client);
+
+    final blocks = await repository.listBlocks('2');
+    expect(api.lastRequest.url.path, '/api/owner/courts/2/blocks');
+    expect(blocks.single.reason, 'Manutenção do piso');
+
+    final created = await repository.createBlock(
+      '2',
+      ScheduleBlockInput(
+        startsAt: DateTime.utc(2026, 12, 5, 11),
+        endsAt: DateTime.utc(2026, 12, 5, 15),
+        reason: ' Manutenção do piso ',
+      ),
+    );
+    expect(api.lastRequest.method, 'POST');
+    expect(api.lastBody, {
+      'startsAt': '2026-12-05T11:00:00.000Z',
+      'endsAt': '2026-12-05T15:00:00.000Z',
+      'reason': 'Manutenção do piso',
+    });
+    expect(created.id, '9');
+    expect(created.courtId, '2');
+  });
 }
