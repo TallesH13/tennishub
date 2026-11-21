@@ -1,5 +1,7 @@
 # TennisHub — Agendamento de Quadras de Tênis
 
+[![CI](https://github.com/TallesH13/tennishub/actions/workflows/ci.yml/badge.svg)](https://github.com/TallesH13/tennishub/actions/workflows/ci.yml)
+
 Sistema web (Flutter) para agendamento de quadras de tênis. Projeto da disciplina **CSI405 – Gerência de Projetos de Software** (UFOP / ICEA / DECSI, 2026/2).
 
 - **Clientes**: consultam quadras e horários e agendam 1 hora (máx. 2 por dia) informando nome e telefone — **sem login**.
