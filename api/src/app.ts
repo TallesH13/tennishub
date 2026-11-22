@@ -11,6 +11,9 @@ import { authRoutes, ownerMeRoute } from './modules/auth/auth.routes.js';
 import { AuthService } from './modules/auth/auth.service.js';
 import { LoginRateLimiter } from './modules/auth/login-rate-limiter.js';
 import { SessionManager } from './modules/auth/session.manager.js';
+import { CourtsRepository } from './modules/courts/courts.repository.js';
+import { ownerCourtsRoutes, publicCourtsRoutes } from './modules/courts/courts.routes.js';
+import { CourtsService } from './modules/courts/courts.service.js';
 import { HealthRepository } from './modules/health/health.repository.js';
 import { healthRoutes } from './modules/health/health.routes.js';
 import { HealthService } from './modules/health/health.service.js';
@@ -73,6 +76,7 @@ export async function buildApp(
   const sessionSecret = resolveSessionSecret(deps.sessionSecret);
 
   const healthService = new HealthService(new HealthRepository(deps.db));
+  const courtsService = new CourtsService(new CourtsRepository(deps.db));
   const sessionManager = new SessionManager(sessionSecret, now);
   const loginRateLimiter = new LoginRateLimiter({ now });
   const authService = new AuthService(
@@ -86,12 +90,14 @@ export async function buildApp(
     async (api) => {
       await api.register(healthRoutes(healthService));
       await api.register(authRoutes(authService, requireOwnerAuth));
+      await api.register(publicCourtsRoutes(courtsService));
 
       // Todas as rotas /api/owner/* exigem sessão válida do proprietário.
       await api.register(
         async (ownerApi) => {
           ownerApi.addHook('preHandler', requireOwnerAuth);
           await ownerApi.register(ownerMeRoute(authService));
+          await ownerApi.register(ownerCourtsRoutes(courtsService));
           if (options.registerOwnerRoutes) {
             await options.registerOwnerRoutes(ownerApi, requireOwnerAuth);
           }
