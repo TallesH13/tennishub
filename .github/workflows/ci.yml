@@ -1,15 +1,15 @@
 name: CI
 
-# Roda em todo Pull Request para a main e em cada push na main.
+# Roda em todo Pull Request para a develop ou a main e em cada push nessas branches.
 # Os jobs só executam se a pasta correspondente já existir (app/ e api/),
 # então o pipeline funciona desde o primeiro commit e passa a validar
 # o código assim que ele aparece.
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, develop]
   push:
-    branches: [main]
+    branches: [main, develop]
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -80,7 +80,11 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     env:
+      NODE_ENV: test
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/tennishub_test
+      DATABASE_URL_DIRECT: postgres://postgres:postgres@localhost:5432/tennishub_test
+      TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/tennishub_test
+      SESSION_SECRET: ci-local-test-secret-key-minimum-32-chars
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

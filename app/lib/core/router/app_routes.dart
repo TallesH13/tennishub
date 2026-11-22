@@ -5,4 +5,7 @@ abstract final class AppRoutes {
 
   /// Painel do proprietário. Passa a exigir login na issue #25.
   static const String admin = '/admin';
+
+  /// Relatório de locações do proprietário (RF10).
+  static const String adminReports = '/admin/relatorios';
 }
