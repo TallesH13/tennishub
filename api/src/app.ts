@@ -4,6 +4,7 @@ import Fastify, {
   type FastifyServerOptions,
   type preHandlerAsyncHookHandler,
 } from 'fastify';
+import type pg from 'pg';
 import type { Queryable } from './db/pool.js';
 import { createRequireOwnerAuth } from './modules/auth/auth.middleware.js';
 import { AuthRepository } from './modules/auth/auth.repository.js';
@@ -17,6 +18,9 @@ import { CourtsService } from './modules/courts/courts.service.js';
 import { HealthRepository } from './modules/health/health.repository.js';
 import { healthRoutes } from './modules/health/health.routes.js';
 import { HealthService } from './modules/health/health.service.js';
+import { ScheduleRepository } from './modules/schedule/schedule.repository.js';
+import { ownerScheduleRoutes } from './modules/schedule/schedule.routes.js';
+import { ScheduleService } from './modules/schedule/schedule.service.js';
 import { registerErrorHandling } from './shared/errors.js';
 
 /** Prefixo de todas as rotas REST. O build do Flutter Web será servido na raiz (#4). */
@@ -75,8 +79,15 @@ export async function buildApp(
   const now = deps.now ?? (() => Date.now());
   const sessionSecret = resolveSessionSecret(deps.sessionSecret);
 
+  const courtsRepository = new CourtsRepository(deps.db);
   const healthService = new HealthService(new HealthRepository(deps.db));
-  const courtsService = new CourtsService(new CourtsRepository(deps.db));
+  const courtsService = new CourtsService(courtsRepository);
+  const scheduleService = new ScheduleService(
+    deps.db as pg.Pool,
+    new ScheduleRepository(deps.db),
+    courtsRepository,
+    now,
+  );
   const sessionManager = new SessionManager(sessionSecret, now);
   const loginRateLimiter = new LoginRateLimiter({ now });
   const authService = new AuthService(
@@ -98,6 +109,7 @@ export async function buildApp(
           ownerApi.addHook('preHandler', requireOwnerAuth);
           await ownerApi.register(ownerMeRoute(authService));
           await ownerApi.register(ownerCourtsRoutes(courtsService));
+          await ownerApi.register(ownerScheduleRoutes(scheduleService));
           if (options.registerOwnerRoutes) {
             await options.registerOwnerRoutes(ownerApi, requireOwnerAuth);
           }
