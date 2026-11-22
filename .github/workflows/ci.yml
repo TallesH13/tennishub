@@ -26,7 +26,7 @@ jobs:
       app: ${{ steps.d.outputs.app }}
       api_node: ${{ steps.d.outputs.api_node }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - id: d
         run: |
           [ -f app/pubspec.yaml ]  && echo "app=true"      >> "$GITHUB_OUTPUT" || echo "app=false"      >> "$GITHUB_OUTPUT"
@@ -41,7 +41,7 @@ jobs:
       run:
         working-directory: app
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -86,7 +86,7 @@ jobs:
       TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/tennishub_test
       SESSION_SECRET: ci-local-test-secret-key-minimum-32-chars
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: 24

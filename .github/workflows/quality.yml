@@ -33,7 +33,7 @@ jobs:
       app: ${{ steps.d.outputs.app }}
       api: ${{ steps.d.outputs.api }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - id: d
         run: |
           [ -f app/pubspec.yaml ] && echo "app=true" >> "$GITHUB_OUTPUT" || echo "app=false" >> "$GITHUB_OUTPUT"
@@ -43,7 +43,7 @@ jobs:
     name: Repositório (segredos e políticas)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Segredos, políticas e testes dos scripts
         run: .github/scripts/quality.sh repo
 
@@ -53,7 +53,7 @@ jobs:
     if: needs.detect.outputs.app == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -67,7 +67,7 @@ jobs:
     if: needs.detect.outputs.api == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: 24
