@@ -87,7 +87,7 @@ jobs:
       SESSION_SECRET: ci-local-test-secret-key-minimum-32-chars
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
