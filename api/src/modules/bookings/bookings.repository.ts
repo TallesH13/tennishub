@@ -80,6 +80,23 @@ export class BookingsRepository {
     ]);
   }
 
+  /** Trava, até o fim da transação, quem tenta reservar com o mesmo telefone no mesmo dia (RF03). */
+  async lockCustomerDay(customerPhone: string, gameDate: string): Promise<void> {
+    await this.db.query('SELECT pg_advisory_xact_lock(hashtextextended($1, 0))', [
+      `booking-customer-day:${customerPhone}:${gameDate}`,
+    ]);
+  }
+
+  async countConfirmedOnGameDate(customerPhone: string, gameDate: string): Promise<number> {
+    const { rows } = await this.db.query<{ total: string }>(
+      `SELECT count(*) AS total
+       FROM bookings
+       WHERE customer_phone = $1 AND game_date = $2::date AND status = 'confirmed'`,
+      [customerPhone, gameDate],
+    );
+    return Number(rows[0]?.total ?? 0);
+  }
+
   /** Devolve `null` quando o código já existe, para o serviço tentar outro. */
   async insert(data: NewBooking): Promise<Booking | null> {
     const { rows } = await this.db.query<BookingDbRow>(
