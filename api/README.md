@@ -126,6 +126,8 @@ Todos os erros saem no mesmo formato JSON:
 
 Todas as rotas ficam sob o prefixo `/api`.
 
+Nas consultas públicas de horários (#13), data inválida ou ausente responde `400`, e datas fora da janela de reserva (de hoje até `BOOKING_WINDOW_DAYS` dias à frente, padrão 30, D08) devolvem listas vazias.
+
 | Método   | Rota                                  | Descrição                                                                                                                                                                                                                |
 | -------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `GET`    | `/api/health`                         | `200 { "status": "ok", "database": "ok" }` quando a API e o banco respondem; `503` se o banco estiver indisponível.                                                                                                      |
@@ -133,7 +135,9 @@ Todas as rotas ficam sob o prefixo `/api`.
 | `POST`   | `/api/auth/logout`                    | Encerra a sessão atual do proprietário (`204 No Content`) e limpa o cookie de sessão. Exige sessão válida (`401`).                                                                                                       |
 | `GET`    | `/api/auth/me`                        | Retorna `{ "owner": { "id", "name", "email" } }` do proprietário autenticado (`200`) ou `401` sem sessão válida.                                                                                                         |
 | `GET`    | `/api/owner/me`                       | Alias protegido sob `/api/owner/*` que retorna os dados do proprietário autenticado (`200`). Todas as rotas `/api/owner/*` exigem sessão válida e expiram após 30 minutos de inatividade (`401`).                        |
-| `GET`    | `/api/courts`                         | Lista as quadras ativas (`200 { "courts": [...] }`) para consulta pública.                                                                                                                                               |
+| `GET`    | `/api/courts`                         | Lista as quadras ativas (`200 { "courts": [...] }`) para consulta pública. Com `?date=AAAA-MM-DD`, devolve só as quadras com algum horário livre no dia, no formato de `/api/availability`.                              |
+| `GET`    | `/api/courts/:id/slots?date=`         | Horários de 1 hora de uma quadra no dia (`200 { "date", "courtId", "courtName", "hourlyPriceCents", "slots" }`), com `status` `free`, `busy` ou `closed` (passado, bloqueado ou fechado). `404` se a quadra não existe.  |
+| `GET`    | `/api/availability?date=`             | Horários de todas as quadras no dia (`200 { "date", "courts": [{ "courtId", "courtName", "hourlyPriceCents", "slots" }] }`), usado pelo app. Sem login e sem dados de quem reservou.                                     |
 | `GET`    | `/api/owner/courts`                   | Lista todas as quadras do clube, incluindo as marcadas para remoção futura (`200 { "courts": [...] }`). Exige login.                                                                                                     |
 | `POST`   | `/api/owner/courts`                   | Cadastra uma quadra com `{ "name", "hourlyPriceCents"?, "unavailableFrom"? }` (`201 { "court": {...} }`). Exige login.                                                                                                   |
 | `PUT`    | `/api/owner/courts/:id`               | Atualiza os dados de uma quadra existente (`200 { "court": {...} }`). Exige login.                                                                                                                                       |
