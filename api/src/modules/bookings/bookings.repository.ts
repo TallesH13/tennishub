@@ -48,6 +48,25 @@ export const BOOKING_COLUMNS = `b.id, b.code, b.court_id, c.name AS court_name, 
   b.customer_name, b.customer_phone, b.status, b.needs_relocation, b.relocation_reason,
   b.cancelled_by, b.cancellation_reason, b.created_at`;
 
+// SQL fixo, sem interpolação: código e telefone vão sempre como parâmetros ($1, $2).
+const FIND_BY_CODE_AND_PHONE = `
+  SELECT b.id, b.code, b.court_id, c.name AS court_name, b.starts_at, b.ends_at,
+    b.customer_name, b.customer_phone, b.status, b.needs_relocation, b.relocation_reason,
+    b.cancelled_by, b.cancellation_reason, b.created_at
+  FROM bookings b
+  JOIN courts c ON c.id = b.court_id
+  WHERE b.code = $1 AND b.customer_phone = $2`;
+
+// Trava a linha da reserva até o fim da transação, para cancelar ou remarcar com segurança.
+const FIND_BY_CODE_AND_PHONE_FOR_UPDATE = `
+  SELECT b.id, b.code, b.court_id, c.name AS court_name, b.starts_at, b.ends_at,
+    b.customer_name, b.customer_phone, b.status, b.needs_relocation, b.relocation_reason,
+    b.cancelled_by, b.cancellation_reason, b.created_at
+  FROM bookings b
+  JOIN courts c ON c.id = b.court_id
+  WHERE b.code = $1 AND b.customer_phone = $2
+  FOR UPDATE OF b`;
+
 export function mapBookingRow(row: BookingDbRow): Booking {
   return {
     id: Number(row.id),
@@ -108,14 +127,8 @@ export class BookingsRepository {
     customerPhone: string,
     options: { forUpdate?: boolean } = {},
   ): Promise<Booking | null> {
-    const { rows } = await this.db.query<BookingDbRow>(
-      `SELECT ${BOOKING_COLUMNS}
-       FROM bookings b
-       JOIN courts c ON c.id = b.court_id
-       WHERE b.code = $1 AND b.customer_phone = $2
-       ${options.forUpdate ? 'FOR UPDATE OF b' : ''}`,
-      [code, customerPhone],
-    );
+    const sql = options.forUpdate ? FIND_BY_CODE_AND_PHONE_FOR_UPDATE : FIND_BY_CODE_AND_PHONE;
+    const { rows } = await this.db.query<BookingDbRow>(sql, [code, customerPhone]);
     return rows[0] ? mapBookingRow(rows[0]) : null;
   }
 
