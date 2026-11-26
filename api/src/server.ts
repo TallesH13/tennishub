@@ -8,7 +8,7 @@ async function main(): Promise<void> {
   const pool = createPool(config.databaseUrl);
 
   const app = await buildApp(
-    { db: pool },
+    { db: pool, bookingWindowDays: config.bookingWindowDays },
     {
       logger: {
         level: config.logLevel,

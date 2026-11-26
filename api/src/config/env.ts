@@ -24,6 +24,12 @@ const envSchema = z.object({
       'DATABASE_URL_DIRECT deve ser uma URL postgres://usuario:senha@host/banco',
     ),
   SESSION_SECRET: z.string().min(32, 'SESSION_SECRET deve ter pelo menos 32 caracteres'),
+  BOOKING_WINDOW_DAYS: z.coerce
+    .number()
+    .int('BOOKING_WINDOW_DAYS deve ser um número inteiro de dias')
+    .min(1, 'BOOKING_WINDOW_DAYS deve ser de pelo menos 1 dia')
+    .max(365, 'BOOKING_WINDOW_DAYS deve ser de no máximo 365 dias')
+    .default(30),
 });
 
 export type AppConfig = {
@@ -34,6 +40,7 @@ export type AppConfig = {
   databaseUrl: string;
   databaseUrlDirect: string;
   sessionSecret: string;
+  bookingWindowDays: number;
 };
 
 export class ConfigError extends Error {
@@ -83,6 +90,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     databaseUrl: data.DATABASE_URL,
     databaseUrlDirect: data.DATABASE_URL_DIRECT ?? data.DATABASE_URL,
     sessionSecret: data.SESSION_SECRET,
+    bookingWindowDays: data.BOOKING_WINDOW_DAYS,
   };
 }
 

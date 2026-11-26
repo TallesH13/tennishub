@@ -56,15 +56,6 @@ const removeCourtSchema = z.object({
   unavailableFrom: isoDateSchema,
 });
 
-export function publicCourtsRoutes(service: CourtsService) {
-  return async function register(app: FastifyInstance): Promise<void> {
-    app.get('/courts', async () => {
-      const courts = await service.listPublicCourts();
-      return { courts };
-    });
-  };
-}
-
 export function ownerCourtsRoutes(service: CourtsService) {
   return async function register(app: FastifyInstance): Promise<void> {
     app.get('/courts', async () => {
