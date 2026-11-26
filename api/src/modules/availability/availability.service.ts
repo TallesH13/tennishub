@@ -40,6 +40,10 @@ export class AvailabilityService {
     private readonly bookingWindowDays: number = DEFAULT_BOOKING_WINDOW_DAYS,
   ) {}
 
+  get windowDays(): number {
+    return this.bookingWindowDays;
+  }
+
   isBookable(date: string): boolean {
     const today = todayInSaoPaulo(new Date(this.now()));
     return isWithinBookingWindow(date, today, this.bookingWindowDays);

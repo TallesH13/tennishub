@@ -14,6 +14,8 @@ import { LoginRateLimiter } from './modules/auth/login-rate-limiter.js';
 import { SessionManager } from './modules/auth/session.manager.js';
 import { publicAvailabilityRoutes } from './modules/availability/availability.routes.js';
 import { AvailabilityService } from './modules/availability/availability.service.js';
+import { publicBookingsRoutes } from './modules/bookings/bookings.routes.js';
+import { BookingsService } from './modules/bookings/bookings.service.js';
 import { CourtsRepository } from './modules/courts/courts.repository.js';
 import { ownerCourtsRoutes } from './modules/courts/courts.routes.js';
 import { CourtsService } from './modules/courts/courts.service.js';
@@ -98,6 +100,12 @@ export async function buildApp(
     now,
     deps.bookingWindowDays,
   );
+  const bookingsService = new BookingsService(
+    deps.db as pg.Pool,
+    courtsRepository,
+    availabilityService,
+    now,
+  );
   const sessionManager = new SessionManager(sessionSecret, now);
   const loginRateLimiter = new LoginRateLimiter({ now });
   const authService = new AuthService(
@@ -112,6 +120,7 @@ export async function buildApp(
       await api.register(healthRoutes(healthService));
       await api.register(authRoutes(authService, requireOwnerAuth));
       await api.register(publicAvailabilityRoutes(courtsService, availabilityService));
+      await api.register(publicBookingsRoutes(bookingsService));
 
       // Todas as rotas /api/owner/* exigem sessão válida do proprietário.
       await api.register(
