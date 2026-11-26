@@ -12,8 +12,12 @@ import { authRoutes, ownerMeRoute } from './modules/auth/auth.routes.js';
 import { AuthService } from './modules/auth/auth.service.js';
 import { LoginRateLimiter } from './modules/auth/login-rate-limiter.js';
 import { SessionManager } from './modules/auth/session.manager.js';
+import { publicAvailabilityRoutes } from './modules/availability/availability.routes.js';
+import { AvailabilityService } from './modules/availability/availability.service.js';
+import { publicBookingsRoutes } from './modules/bookings/bookings.routes.js';
+import { BookingsService } from './modules/bookings/bookings.service.js';
 import { CourtsRepository } from './modules/courts/courts.repository.js';
-import { ownerCourtsRoutes, publicCourtsRoutes } from './modules/courts/courts.routes.js';
+import { ownerCourtsRoutes } from './modules/courts/courts.routes.js';
 import { CourtsService } from './modules/courts/courts.service.js';
 import { HealthRepository } from './modules/health/health.repository.js';
 import { healthRoutes } from './modules/health/health.routes.js';
@@ -30,6 +34,8 @@ export type AppDependencies = {
   db: Queryable;
   sessionSecret?: string;
   now?: () => number;
+  /** Antecedência máxima de reserva em dias (D08). Padrão: 30. */
+  bookingWindowDays?: number;
 };
 
 export type BuildAppOptions = {
@@ -88,6 +94,18 @@ export async function buildApp(
     courtsRepository,
     now,
   );
+  const availabilityService = new AvailabilityService(
+    courtsRepository,
+    scheduleService,
+    now,
+    deps.bookingWindowDays,
+  );
+  const bookingsService = new BookingsService(
+    deps.db as pg.Pool,
+    courtsRepository,
+    availabilityService,
+    now,
+  );
   const sessionManager = new SessionManager(sessionSecret, now);
   const loginRateLimiter = new LoginRateLimiter({ now });
   const authService = new AuthService(
@@ -101,7 +119,8 @@ export async function buildApp(
     async (api) => {
       await api.register(healthRoutes(healthService));
       await api.register(authRoutes(authService, requireOwnerAuth));
-      await api.register(publicCourtsRoutes(courtsService));
+      await api.register(publicAvailabilityRoutes(courtsService, availabilityService));
+      await api.register(publicBookingsRoutes(bookingsService));
 
       // Todas as rotas /api/owner/* exigem sessão válida do proprietário.
       await api.register(

@@ -1,15 +1,12 @@
-import { randomInt } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { loadEnvFile } from '../config/env.js';
+import { generateBookingCode } from '../modules/bookings/booking-code.js';
 import { createPool, withTransaction } from './pool.js';
 import type pg from 'pg';
 
 const BCRYPT_COST = 12;
-
-/** Alfabeto do código da reserva (D06): sem 0, O, 1 e I. */
-const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
 const ownerSchema = z.object({
   OWNER_NAME: z.string().trim().min(2, 'OWNER_NAME precisa ter pelo menos 2 caracteres'),
@@ -38,12 +35,6 @@ export function ownerFromEnv(env: NodeJS.ProcessEnv = process.env): OwnerInput {
     email: parsed.data.OWNER_EMAIL,
     password: parsed.data.OWNER_PASSWORD,
   };
-}
-
-function sampleCode(): string {
-  let code = '';
-  for (let i = 0; i < 8; i++) code += CODE_ALPHABET[randomInt(CODE_ALPHABET.length)];
-  return code;
 }
 
 /**
@@ -103,7 +94,7 @@ export async function seed(pool: pg.Pool, owner: OwnerInput): Promise<SeedResult
                  (${tomorrowAt} + make_interval(hours => $2)) AT TIME ZONE 'America/Sao_Paulo',
                  (${tomorrowAt} + make_interval(hours => $2 + 1)) AT TIME ZONE 'America/Sao_Paulo',
                  $3, $4, $5)`,
-        [sample.court, sample.hour, sample.name, sample.phone, sampleCode()],
+        [sample.court, sample.hour, sample.name, sample.phone, generateBookingCode()],
       );
     }
 

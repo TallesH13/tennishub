@@ -1,7 +1,7 @@
 import type pg from 'pg';
 import { withTransaction } from '../../db/pool.js';
 import { ConflictError, NotFoundError } from '../../shared/errors.js';
-import type { CourtsRepository } from '../courts/courts.repository.js';
+import type { Court, CourtsRepository } from '../courts/courts.repository.js';
 import {
   ScheduleRepository,
   type CourtSchedule,
@@ -244,6 +244,15 @@ export class ScheduleService {
       throw new NotFoundError('Quadra não encontrada.');
     }
 
+    return this.buildCourtDaySlots(court, date, options);
+  }
+
+  async buildCourtDaySlots(
+    court: Court,
+    date: string,
+    options: { now?: Date } = {},
+  ): Promise<CourtHourSlot[]> {
+    const courtId = court.id;
     if (court.unavailableFrom !== null && date >= court.unavailableFrom) {
       return [];
     }

@@ -64,6 +64,17 @@ export class CourtsRepository {
     return rows.map(mapCourtRow);
   }
 
+  async listAvailableOn(date: string): Promise<Court[]> {
+    const { rows } = await this.db.query<CourtDbRow>(
+      `SELECT id, name, hourly_price, unavailable_from
+       FROM courts
+       WHERE unavailable_from IS NULL OR unavailable_from > $1::date
+       ORDER BY id ASC`,
+      [date],
+    );
+    return rows.map(mapCourtRow);
+  }
+
   async listAll(): Promise<Court[]> {
     const { rows } = await this.db.query<CourtDbRow>(
       `SELECT id, name, hourly_price, unavailable_from
