@@ -36,6 +36,8 @@ export type AppDependencies = {
   now?: () => number;
   /** Antecedência máxima de reserva em dias (D08). Padrão: 30. */
   bookingWindowDays?: number;
+  /** Prazo mínimo, em horas, para o cliente cancelar ou remarcar (D02). Padrão: 2. */
+  cancellationDeadlineHours?: number;
 };
 
 export type BuildAppOptions = {
@@ -105,6 +107,8 @@ export async function buildApp(
     courtsRepository,
     availabilityService,
     now,
+    undefined,
+    { cancellationDeadlineHours: deps.cancellationDeadlineHours },
   );
   const sessionManager = new SessionManager(sessionSecret, now);
   const loginRateLimiter = new LoginRateLimiter({ now });

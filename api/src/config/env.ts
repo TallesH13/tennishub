@@ -30,6 +30,11 @@ const envSchema = z.object({
     .min(1, 'BOOKING_WINDOW_DAYS deve ser de pelo menos 1 dia')
     .max(365, 'BOOKING_WINDOW_DAYS deve ser de no máximo 365 dias')
     .default(30),
+  CANCELLATION_DEADLINE_HOURS: z.coerce
+    .number()
+    .min(0, 'CANCELLATION_DEADLINE_HOURS não pode ser negativo')
+    .max(72, 'CANCELLATION_DEADLINE_HOURS deve ser de no máximo 72 horas')
+    .default(2),
 });
 
 export type AppConfig = {
@@ -41,6 +46,7 @@ export type AppConfig = {
   databaseUrlDirect: string;
   sessionSecret: string;
   bookingWindowDays: number;
+  cancellationDeadlineHours: number;
 };
 
 export class ConfigError extends Error {
@@ -91,6 +97,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     databaseUrlDirect: data.DATABASE_URL_DIRECT ?? data.DATABASE_URL,
     sessionSecret: data.SESSION_SECRET,
     bookingWindowDays: data.BOOKING_WINDOW_DAYS,
+    cancellationDeadlineHours: data.CANCELLATION_DEADLINE_HOURS,
   };
 }
 
