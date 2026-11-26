@@ -47,9 +47,9 @@ A `message` é mostrada ao usuário, então deve estar em português e dizer o q
 | 404 | `NOT_FOUND` | Recurso inexistente, ou código e telefone sem reserva | `NotFoundException` |
 | 409 | `SLOT_UNAVAILABLE` | Horário reservado, fechado ou bloqueado | `SlotUnavailableException` |
 | 409 | `DAILY_LIMIT_REACHED` | Telefone já tem 2 reservas no dia do jogo (RF03) | `DailyLimitException` |
-| 409 | outro (ex.: `COURT_NAME_TAKEN`, `BOOKING_ALREADY_CANCELLED`) | Conflito com o estado atual | `ConflictException` |
+| 409 | outro (ex.: `COURT_NAME_TAKEN`, `BOOKING_ALREADY_CANCELLED`, `CHANGE_DEADLINE_PASSED`, `BOOKING_ALREADY_STARTED`, `BOOKING_SAME_SLOT`) | Conflito com o estado atual | `ConflictException` |
 | 422 | `VALIDATION_ERROR` | Dados inválidos; `details` = `[{ "field", "message" }]` | `ValidationException` |
-| 429 | `TOO_MANY_ATTEMPTS` | Muitas tentativas de login | `TooManyAttemptsException` |
+| 429 | `TOO_MANY_ATTEMPTS` | Muitas tentativas de login, ou 10 tentativas sem achar a reserva em 15 minutos (por IP e por telefone) | `TooManyAttemptsException` |
 | 5xx | `INTERNAL_ERROR` | Falha interna, sem detalhes | `ServerException` |
 
 ## Objetos
