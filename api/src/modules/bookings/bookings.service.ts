@@ -17,6 +17,9 @@ export type CreateBookingInput = {
 
 const MAX_CODE_ATTEMPTS = 5;
 
+// RF03 / D01: por telefone e dia do jogo, contando só reservas confirmadas.
+export const DAILY_BOOKING_LIMIT = 2;
+
 function slotUnavailable(message: string): ConflictError {
   return new ConflictError('SLOT_UNAVAILABLE', message);
 }
@@ -48,6 +51,8 @@ export class BookingsService {
     }
 
     const gameDate = todayInSaoPaulo(new Date(startsAtMs));
+    // D07: o mesmo cliente com o telefone escrito de outro jeito continua sendo o mesmo.
+    const customerPhone = input.customerPhone.replace(/\D/g, '');
     if (!this.availabilityService.isBookable(gameDate)) {
       throw slotUnavailable(
         `Só é possível reservar até ${this.availabilityService.windowDays} dias à frente.`,
@@ -57,7 +62,17 @@ export class BookingsService {
     try {
       return await withTransaction(this.pool, async (client) => {
         const repository = new BookingsRepository(client);
+        // Sempre telefone antes do horário: a mesma ordem em todas as transações evita deadlock.
+        await repository.lockCustomerDay(customerPhone, gameDate);
         await repository.lockSlot(court.id, input.startsAt);
+
+        const bookingsThatDay = await repository.countConfirmedOnGameDate(customerPhone, gameDate);
+        if (bookingsThatDay >= DAILY_BOOKING_LIMIT) {
+          throw new ConflictError(
+            'DAILY_LIMIT_REACHED',
+            `Este telefone já tem ${DAILY_BOOKING_LIMIT} reservas para este dia. O limite é de ${DAILY_BOOKING_LIMIT} reservas por dia: escolha outra data.`,
+          );
+        }
 
         // Lê os horários pela conexão da transação: pegar outra do pool enquanto a trava
         // está presa esgotaria o pool sob pedidos simultâneos.
@@ -83,7 +98,7 @@ export class BookingsService {
             courtId: court.id,
             startsAt: new Date(startsAtMs).toISOString(),
             customerName: input.customerName,
-            customerPhone: input.customerPhone,
+            customerPhone,
             code: this.generateCode(),
           });
           if (booking) return booking;
