@@ -87,14 +87,66 @@ export class BookingsRepository {
     ]);
   }
 
-  async countConfirmedOnGameDate(customerPhone: string, gameDate: string): Promise<number> {
+  /** `exceptBookingId` deixa a própria reserva fora da conta ao remarcar dentro do mesmo dia. */
+  async countConfirmedOnGameDate(
+    customerPhone: string,
+    gameDate: string,
+    exceptBookingId: number | null = null,
+  ): Promise<number> {
     const { rows } = await this.db.query<{ total: string }>(
       `SELECT count(*) AS total
        FROM bookings
-       WHERE customer_phone = $1 AND game_date = $2::date AND status = 'confirmed'`,
-      [customerPhone, gameDate],
+       WHERE customer_phone = $1 AND game_date = $2::date AND status = 'confirmed'
+         AND ($3::bigint IS NULL OR id <> $3::bigint)`,
+      [customerPhone, gameDate, exceptBookingId],
     );
     return Number(rows[0]?.total ?? 0);
+  }
+
+  async findByCodeAndPhone(
+    code: string,
+    customerPhone: string,
+    options: { forUpdate?: boolean } = {},
+  ): Promise<Booking | null> {
+    const { rows } = await this.db.query<BookingDbRow>(
+      `SELECT ${BOOKING_COLUMNS}
+       FROM bookings b
+       JOIN courts c ON c.id = b.court_id
+       WHERE b.code = $1 AND b.customer_phone = $2
+       ${options.forUpdate ? 'FOR UPDATE OF b' : ''}`,
+      [code, customerPhone],
+    );
+    return rows[0] ? mapBookingRow(rows[0]) : null;
+  }
+
+  async cancelByCustomer(bookingId: number): Promise<Booking> {
+    const { rows } = await this.db.query<BookingDbRow>(
+      `WITH updated AS (
+         UPDATE bookings
+         SET status = 'cancelled', cancelled_at = now(), cancelled_by = 'customer'
+         WHERE id = $1
+         RETURNING *
+       )
+       SELECT ${BOOKING_COLUMNS} FROM updated b JOIN courts c ON c.id = b.court_id`,
+      [bookingId],
+    );
+    return mapBookingRow(rows[0]!);
+  }
+
+  /** Muda quadra e horário mantendo o código; a reserva deixa de precisar de realocação. */
+  async moveTo(bookingId: number, courtId: number, startsAt: string): Promise<Booking> {
+    const { rows } = await this.db.query<BookingDbRow>(
+      `WITH updated AS (
+         UPDATE bookings
+         SET court_id = $2, starts_at = $3::timestamptz,
+             ends_at = $3::timestamptz + interval '1 hour', needs_relocation = false
+         WHERE id = $1
+         RETURNING *
+       )
+       SELECT ${BOOKING_COLUMNS} FROM updated b JOIN courts c ON c.id = b.court_id`,
+      [bookingId, courtId, startsAt],
+    );
+    return mapBookingRow(rows[0]!);
   }
 
   /** Devolve `null` quando o código já existe, para o serviço tentar outro. */
