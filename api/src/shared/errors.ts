@@ -57,6 +57,21 @@ export function zodToFieldErrors(error: ZodError): FieldError[] {
   }));
 }
 
+export const SLOT_TAKEN_MESSAGE = 'Esse horário acabou de ser reservado. Escolha outro horário.';
+
+// Restrições do banco que representam regra de negócio, e não falha do servidor (RNF01).
+const BUSINESS_CONSTRAINTS: Record<string, () => AppError> = {
+  bookings_court_slot_confirmed_key: () =>
+    new ConflictError('SLOT_UNAVAILABLE', SLOT_TAKEN_MESSAGE),
+};
+
+/** Traduz uma violação conhecida de restrição do PostgreSQL em erro de negócio. */
+export function mapDatabaseError(error: unknown): AppError | null {
+  const { code, constraint } = (error ?? {}) as { code?: string; constraint?: string };
+  if (code !== '23505' || !constraint) return null;
+  return BUSINESS_CONSTRAINTS[constraint]?.() ?? null;
+}
+
 function body(code: string, message: string, details?: unknown): ErrorBody {
   return details === undefined
     ? { error: { code, message } }
@@ -74,6 +89,13 @@ export function registerErrorHandling(app: FastifyInstance): void {
       return reply
         .status(422)
         .send(body('VALIDATION_ERROR', 'Dados inválidos.', zodToFieldErrors(error)));
+    }
+
+    const databaseError = mapDatabaseError(error);
+    if (databaseError) {
+      return reply
+        .status(databaseError.statusCode)
+        .send(body(databaseError.code, databaseError.message));
     }
 
     const fastifyError = error as FastifyError;
