@@ -18,6 +18,6 @@ final apiClientProvider = Provider<ApiClient>((ref) {
     httpClient: ref.watch(httpClientProvider),
     baseUrl: ref.watch(appConfigProvider).apiBaseUrl,
     readToken: () => sessions.token,
-    onUnauthorized: sessions.clear,
+    onUnauthorized: sessions.expire,
   );
 });

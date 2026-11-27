@@ -39,7 +39,8 @@ class HttpAuthRepository implements AuthRepository {
 
   @override
   Future<Owner> fetchCurrentOwner() async {
-    final data = await _api.get('/auth/me');
+    // Sem sessão, o 401 aqui é a resposta esperada, não uma expiração.
+    final data = await _api.get('/auth/me', notifyUnauthorized: false);
     return parseResponse(
       () => Owner.fromJson(asJsonMap(data).readMap('owner')),
     );

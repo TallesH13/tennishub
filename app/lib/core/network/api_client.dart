@@ -39,8 +39,20 @@ class ApiClient {
   static void _doNothing() {}
 
   /// `GET` que devolve o JSON da resposta.
-  Future<Object?> get(String path, {Map<String, String?> query = const {}}) {
-    return _json('GET', path, query: query);
+  ///
+  /// Use [notifyUnauthorized] `false` quando um 401 for uma resposta
+  /// esperada (ex.: verificar se ainda existe sessão).
+  Future<Object?> get(
+    String path, {
+    Map<String, String?> query = const {},
+    bool notifyUnauthorized = true,
+  }) {
+    return _json(
+      'GET',
+      path,
+      query: query,
+      notifyUnauthorized: notifyUnauthorized,
+    );
   }
 
   /// `POST` com corpo JSON.

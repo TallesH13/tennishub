@@ -49,10 +49,13 @@ flutter test
 | Rota | Tela | Acesso |
 |---|---|---|
 | `/` | Área pública (consulta e agendamento) | Livre |
-| `/admin` | Painel do proprietário | Login (a partir da issue #25) |
-| `/admin/relatorios` | Relatório de locações | Login (a partir da issue #25) |
+| `/login` | Login do proprietário | Livre; com sessão, vai ao painel |
+| `/admin` | Início do painel do proprietário | Exige login |
+| `/admin/relatorios` | Relatório de locações | Exige login |
 
 O app usa URLs com `#` (ex.: `http://localhost:8080/#/admin`), que funcionam em qualquer servidor sem configuração extra.
+
+Toda rota em `/admin` sem sessão leva ao login, que depois volta para a tela pedida (`/login?voltar=...`). Quando a API responde 401 em qualquer chamada, a sessão é encerrada como expirada e o login avisa o proprietário. As telas do painel ficam dentro de `AdminShell` (barra superior com "Sair" e menu lateral); para incluir uma tela nova, crie a rota dentro do `ShellRoute` em `app_router.dart` e o item em `adminDestinations`.
 
 ## Estrutura
 

@@ -79,10 +79,13 @@ void main() {
 
       expect(find.byKey(ReportFilterKeys.submit), findsOneWidget);
 
-      await tester.tap(find.text('Painel do proprietário'));
+      await tester.tap(find.text('Início'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Em construção: login e painel.'), findsOneWidget);
+      expect(
+        find.text('Gestão de quadras, horários, agendamentos e relatórios.'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('as datas aceitam só dígitos e ganham as barras sozinhas', (
