@@ -9,6 +9,7 @@ import 'package:tennishub/core/session/owner_session.dart';
 import 'package:tennishub/features/auth/data/auth_providers.dart';
 import 'package:tennishub/features/auth/data/fake_auth_repository.dart';
 import 'package:tennishub/features/auth/presentation/state/auth_controller.dart';
+import 'package:tennishub/features/courts/data/courts_providers.dart';
 
 import '../../../../support/api_samples.dart';
 import '../../../../support/api_test_support.dart';
@@ -33,17 +34,15 @@ void main() {
   group('com a API', () {
     test('guarda a credencial, envia nas chamadas seguintes e limpa a sessão no 401', () async {
       final requests = <http.Request>[];
-      var meCalls = 0;
       final client = MockClient((request) async {
         requests.add(request);
         switch (request.url.path) {
           case '/api/auth/login':
             return jsonResponse(loginResponse);
           case '/api/auth/me':
-            meCalls++;
-            return meCalls == 1
-                ? jsonResponse(meResponse)
-                : jsonResponse(sessionExpiredError, 401);
+            return jsonResponse(meResponse);
+          case '/api/owner/courts':
+            return jsonResponse(sessionExpiredError, 401);
         }
         return jsonResponse(bookingNotFoundError, 404);
       });
@@ -61,11 +60,16 @@ void main() {
       await repository.fetchCurrentOwner();
       expect(requests.last.headers['Authorization'], 'Bearer $sampleToken');
 
+      // Qualquer chamada do painel com 401 encerra a sessão como expirada.
       await expectLater(
-        repository.fetchCurrentOwner(),
+        container.read(courtsRepositoryProvider).listAllCourts(),
         throwsA(isA<UnauthorizedException>()),
       );
       expect(container.read(sessionStoreProvider), isNull);
+      expect(
+        container.read(sessionStoreProvider.notifier).consumeExpired(),
+        isTrue,
+      );
     });
 
     test('login recusado não guarda sessão', () async {

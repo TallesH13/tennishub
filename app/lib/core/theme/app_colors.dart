@@ -20,4 +20,10 @@ abstract final class AppColors {
 
   /// Horário ocupado (desabilitado) na grade de horários.
   static const Color slotUnavailable = Color(0xFFE6E6E6);
+
+  /// Fundo de avisos de atenção (ex.: muitas tentativas, realocar).
+  static const Color warningContainer = Color(0xFFFFDF9E);
+
+  /// Texto e ícone sobre [warningContainer].
+  static const Color onWarningContainer = Color(0xFF4D3700);
 }

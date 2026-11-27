@@ -68,17 +68,14 @@ void main() {
     expect(owner.email, 'proprietario@tennishub.com');
   });
 
-  test('sessão expirada limpa a sessão local', () async {
-    final api = FakeApi(
-      (_) async => jsonResponse(sessionExpiredError, 401),
-      token: sampleToken,
-    );
+  test('sem sessão, /auth/me responde 401 sem disparar a expiração', () async {
+    final api = FakeApi((_) async => jsonResponse(sessionExpiredError, 401));
 
     await expectLater(
       HttpAuthRepository(api.client).fetchCurrentOwner(),
       throwsA(isA<UnauthorizedException>()),
     );
-    expect(api.unauthorizedCalls, 1);
+    expect(api.unauthorizedCalls, 0);
   });
 
   test('falha de rede no login lança NetworkException', () async {

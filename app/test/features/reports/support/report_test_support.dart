@@ -155,7 +155,11 @@ Future<void> pumpReportsApp(
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
 
-  final router = createAppRouter(initialLocation: location);
+  // O relatório é do painel: os testes já começam com o proprietário logado.
+  final router = createAppRouter(
+    initialLocation: location,
+    isLoggedIn: () => true,
+  );
   await tester.pumpWidget(
     ProviderScope(
       overrides: [

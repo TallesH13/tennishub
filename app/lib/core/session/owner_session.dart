@@ -46,12 +46,36 @@ class SessionStore extends Notifier<OwnerSession?> {
   @override
   OwnerSession? build() => null;
 
+  bool _expired = false;
+
   /// Credencial atual, ou `null` sem sessão.
   String? get token => state?.token;
 
-  void start(OwnerSession session) => state = session;
+  bool get isLoggedIn => state != null;
 
-  void clear() => state = null;
+  void start(OwnerSession session) {
+    _expired = false;
+    state = session;
+  }
+
+  /// Encerra a sessão a pedido do proprietário (botão "Sair").
+  void clear() {
+    _expired = false;
+    state = null;
+  }
+
+  /// Encerra a sessão porque a API respondeu 401 (sessão expirada).
+  void expire() {
+    _expired = state != null;
+    state = null;
+  }
+
+  /// Diz se a última sessão terminou por expiração, e esquece o aviso.
+  bool consumeExpired() {
+    final expired = _expired;
+    _expired = false;
+    return expired;
+  }
 }
 
 final sessionStoreProvider = NotifierProvider<SessionStore, OwnerSession?>(

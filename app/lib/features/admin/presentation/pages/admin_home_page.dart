@@ -1,33 +1,33 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:tennishub/core/layout/app_page.dart';
 import 'package:tennishub/core/router/app_routes.dart';
+import 'package:tennishub/core/session/owner_session.dart';
 import 'package:tennishub/core/theme/app_spacing.dart';
 
-/// Página inicial do painel do proprietário (rota `/admin`).
-///
-/// Por enquanto é um placeholder: o login e as rotas protegidas entram
-/// na issue #25, e as telas de gestão nas issues #26 a #29.
-class AdminHomePage extends StatelessWidget {
+/// Início do painel do proprietário (rota `/admin`).
+class AdminHomePage extends ConsumerWidget {
   const AdminHomePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final textTheme = Theme.of(context).textTheme;
+    final firstName = ref
+        .watch(sessionStoreProvider)
+        ?.owner
+        .name
+        .split(' ')
+        .first;
 
-    return AppPage(
-      actions: [
-        TextButton.icon(
-          onPressed: () => context.go(AppRoutes.home),
-          icon: const Icon(Icons.home_outlined),
-          label: const Text('Área pública'),
-        ),
-      ],
+    return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Painel do proprietário', style: textTheme.headlineMedium),
-          const SizedBox(height: AppSpacing.sm),
+          Text(
+            firstName == null ? 'Painel do proprietário' : 'Olá, $firstName',
+            style: textTheme.headlineMedium,
+          ),
+          const SizedBox(height: AppSpacing.xs),
           const Text('Gestão de quadras, horários, agendamentos e relatórios.'),
           const SizedBox(height: AppSpacing.lg),
           Card(
@@ -43,15 +43,10 @@ class AdminHomePage extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.md),
           const Card(
-            child: Padding(
-              padding: EdgeInsets.all(AppSpacing.lg),
-              child: Row(
-                children: [
-                  Icon(Icons.admin_panel_settings_outlined),
-                  SizedBox(width: AppSpacing.md),
-                  Expanded(child: Text('Em construção: login e painel.')),
-                ],
-              ),
+            child: ListTile(
+              leading: Icon(Icons.event_outlined),
+              title: Text('Agendamentos, quadras e horários'),
+              subtitle: Text('Em construção.'),
             ),
           ),
         ],
