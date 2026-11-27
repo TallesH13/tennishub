@@ -8,7 +8,10 @@ void main() {
   testWidgets('a área pública abre sem login', (tester) async {
     await pumpTennisHub(tester);
 
-    expect(find.text('Agende sua quadra'), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Reserve uma quadra'), findsOneWidget);
     expect(find.text('Área do proprietário'), findsOneWidget);
   });
 
@@ -27,7 +30,7 @@ void main() {
     await tester.tap(find.text('TennisHub'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Agende sua quadra'), findsOneWidget);
+    expect(find.text('Reserve uma quadra'), findsOneWidget);
   });
 
   testWidgets('rota inexistente mostra a página não encontrada', (
@@ -40,6 +43,6 @@ void main() {
     await tester.tap(find.text('Voltar ao início'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Agende sua quadra'), findsOneWidget);
+    expect(find.text('Reserve uma quadra'), findsOneWidget);
   });
 }
