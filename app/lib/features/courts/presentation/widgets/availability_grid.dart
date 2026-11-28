@@ -10,12 +10,19 @@ class AvailabilityGrid extends StatelessWidget {
     required this.selectedCourtId,
     required this.selectedStartsAt,
     required this.onSlotSelected,
+    this.isRefreshing = false,
+    this.lastUpdatedAt,
+    this.errorMessage,
   });
 
   final DayAvailability availability;
   final String? selectedCourtId;
   final DateTime? selectedStartsAt;
   final void Function(CourtDaySchedule, TimeSlot) onSlotSelected;
+
+  final bool isRefreshing;
+  final DateTime? lastUpdatedAt;
+  final String? errorMessage;
 
   String _formatTime(DateTime date) {
     final hour = date.hour.toString().padLeft(2, '0');
@@ -91,6 +98,14 @@ class AvailabilityGrid extends StatelessWidget {
                     ),
                 ],
               ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            const Divider(),
+            const SizedBox(height: AppSpacing.sm),
+            _AvailabilityUpdateIndicator(
+              isRefreshing: isRefreshing,
+              lastUpdatedAt: lastUpdatedAt,
+              errorMessage: errorMessage,
             ),
           ],
         ),
@@ -186,6 +201,67 @@ class _LegendItem extends StatelessWidget {
         ),
         const SizedBox(width: AppSpacing.xs),
         Text(label),
+      ],
+    );
+  }
+}
+
+class _AvailabilityUpdateIndicator extends StatelessWidget {
+  const _AvailabilityUpdateIndicator({
+    required this.isRefreshing,
+    required this.lastUpdatedAt,
+    required this.errorMessage,
+  });
+
+  final bool isRefreshing;
+  final DateTime? lastUpdatedAt;
+  final String? errorMessage;
+
+  String _formatTime(DateTime date) {
+    final hour = date.hour.toString().padLeft(2, '0');
+    final minute = date.minute.toString().padLeft(2, '0');
+    final second = date.second.toString().padLeft(2, '0');
+
+    return '$hour:$minute:$second';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
+    final IconData icon;
+    final Color color;
+    final String message;
+
+    if (isRefreshing) {
+      icon = Icons.refresh;
+      color = colors.primary;
+      message = 'Atualizando horários...';
+    } else if (errorMessage != null) {
+      icon = Icons.warning_amber_rounded;
+      color = colors.error;
+      message = 'Falha na atualização. Os horários podem estar desatualizados.';
+    } else if (lastUpdatedAt != null) {
+      icon = Icons.check_circle_outline;
+      color = AppColors.courtGreen;
+      message = 'Atualizado às ${_formatTime(lastUpdatedAt!)}';
+    } else {
+      icon = Icons.schedule;
+      color = colors.onSurfaceVariant;
+      message = 'Aguardando atualização';
+    }
+
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: color),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: Text(
+            message,
+            style: Theme.of(context).textTheme.bodySmall
+                ?.copyWith(color: color),
+          ),
+        ),
       ],
     );
   }

@@ -24,6 +24,40 @@ class _DateSelectorState extends State<DateSelector> {
 
   int _offset = 0;
 
+  @override
+  void initState() {
+    super.initState();
+    _syncSelectedDate();
+  }
+
+  @override
+  void didUpdateWidget(covariant DateSelector oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (!DateUtils.isSameDay(oldWidget.selectedDate, widget.selectedDate) ||
+        !DateUtils.isSameDay(oldWidget.today, widget.today)) {
+      _syncSelectedDate();
+    }
+  }
+
+  void _syncSelectedDate() {
+    final today = DateTime.utc(
+      widget.today.year,
+      widget.today.month,
+      widget.today.day,
+    );
+
+    final selected = DateTime.utc(
+      widget.selectedDate.year,
+      widget.selectedDate.month,
+      widget.selectedDate.day,
+    );
+
+    final difference = selected.difference(today).inDays;
+
+    _offset = difference < 0 ? 0 : (difference ~/ _daysPerPage) * _daysPerPage;
+  }
+
   DateTime _dateAt(int offset) {
     return DateTime(
       widget.today.year,
@@ -34,8 +68,9 @@ class _DateSelectorState extends State<DateSelector> {
 
   bool get _canGoBack => _offset > 0;
 
-  bool get _canGoForward =>
-      !_dateAt(_offset + _daysPerPage).isAfter(widget.lastAllowedDate);
+  bool get _canGoForward {
+    return !_dateAt(_offset + _daysPerPage).isAfter(widget.lastAllowedDate);
+  }
 
   void _previousPage() {
     if (!_canGoBack) return;
@@ -51,6 +86,11 @@ class _DateSelectorState extends State<DateSelector> {
     setState(() {
       _offset += _daysPerPage;
     });
+  }
+
+  bool _isDateEnabled(DateTime date) {
+    return !date.isBefore(widget.today) &&
+        !date.isAfter(widget.lastAllowedDate);
   }
 
   @override
@@ -89,11 +129,12 @@ class _DateSelectorState extends State<DateSelector> {
                                 _dateAt(_offset + index),
                                 widget.selectedDate,
                               ),
-                              isEnabled: !_dateAt(_offset + index)
-                                  .isAfter(widget.lastAllowedDate),
-                              onPressed: () => widget.onDateSelected(
+                              isEnabled: _isDateEnabled(
                                 _dateAt(_offset + index),
                               ),
+                              onPressed: () {
+                                widget.onDateSelected(_dateAt(_offset + index));
+                              },
                             ),
                           ),
                       ],

@@ -32,7 +32,10 @@ class _PublicHomePageState extends ConsumerState<PublicHomePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
 
-      ref.read(availabilityControllerProvider.notifier).loadAvailability();
+      final controller = ref.read(availabilityControllerProvider.notifier);
+
+      controller.loadAvailability();
+      controller.startAutoRefresh();
     });
   }
 
@@ -45,6 +48,13 @@ class _PublicHomePageState extends ConsumerState<PublicHomePage> {
     });
   }
 
+  void _clearSelection() {
+    setState(() {
+      _selectedCourt = null;
+      _selectedSlot = null;
+    });
+  }
+
   void _selectDate(DateTime date) {
     final state = ref.read(availabilityControllerProvider);
 
@@ -52,25 +62,128 @@ class _PublicHomePageState extends ConsumerState<PublicHomePage> {
       return;
     }
 
-    setState(() {
-      _selectedCourt = null;
-      _selectedSlot = null;
-    });
+    final controller = ref.read(availabilityControllerProvider.notifier);
 
-    ref.read(availabilityControllerProvider.notifier).selectDate(date);
-  }
-
-  void _continueBooking() {
-    if (_selectedCourt == null ||
-        _selectedSlot == null ||
-        !_selectedSlot!.isFree) {
+    if (date.isBefore(controller.today) ||
+        date.isAfter(controller.lastAllowedDate)) {
       return;
     }
 
-    // O encaminhamento para a próxima etapa será
-    // implementado no próximo commit.
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text('Horário selecionado.')));
+    _clearSelection();
+
+    controller.selectDate(date);
+  }
+
+  void _validateSelection(DayAvailability availability) {
+    final selectedCourt = _selectedCourt;
+    final selectedSlot = _selectedSlot;
+
+    if (selectedCourt == null || selectedSlot == null) {
+      return;
+    }
+
+    for (final court in availability.courts) {
+      if (court.courtId != selectedCourt.courtId) {
+        continue;
+      }
+
+      for (final slot in court.slots) {
+        if (slot.startsAt == selectedSlot.startsAt && slot.isFree) {
+          setState(() {
+            _selectedCourt = court;
+            _selectedSlot = slot;
+          });
+
+          return;
+        }
+      }
+    }
+
+    _clearSelection();
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'O horário selecionado não está mais disponível. '
+          'Selecione outro horário.',
+        ),
+      ),
+    );
+  }
+
+  void _continueBooking() {
+    final court = _selectedCourt;
+    final slot = _selectedSlot;
+
+    final state = ref.read(availabilityControllerProvider);
+
+    if (court == null ||
+        slot == null ||
+        !slot.isFree ||
+        state.status != AvailabilityStatus.success ||
+        state.isRefreshing ||
+        state.errorMessage != null) {
+      return;
+    }
+
+    final availability = state.availability;
+
+    if (availability == null) return;
+
+    final isStillAvailable = availability.courts.any(
+      (currentCourt) =>
+          currentCourt.courtId == court.courtId &&
+          currentCourt.slots.any(
+            (currentSlot) =>
+                currentSlot.startsAt == slot.startsAt && currentSlot.isFree,
+          ),
+    );
+
+    if (!isStillAvailable) {
+      _validateSelection(availability);
+      return;
+    }
+
+    // Ponto de integração com o fluxo de agendamento
+    // que será desenvolvido na Issue #23.
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Horário selecionado'),
+          content: Text(
+            'Quadra: ${court.courtName}\n'
+            'Data: ${_formatDate(slot.startsAt)}\n'
+            'Horário: ${_formatTime(slot.startsAt)}'
+            ' - ${_formatTime(slot.endsAt)}\n\n'
+            'A próxima etapa será o preenchimento '
+            'dos dados da reserva.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Voltar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    final day = date.day.toString().padLeft(2, '0');
+    final month = date.month.toString().padLeft(2, '0');
+
+    return '$day/$month/${date.year}';
+  }
+
+  String _formatTime(DateTime date) {
+    final hour = date.hour.toString().padLeft(2, '0');
+    final minute = date.minute.toString().padLeft(2, '0');
+
+    return '$hour:$minute';
   }
 
   Widget _buildAvailability(
@@ -97,10 +210,26 @@ class _PublicHomePageState extends ConsumerState<PublicHomePage> {
 
           final nextDay = DateTime(date.year, date.month, date.day + 1);
 
-          return AvailabilityEmpty(
-            onNextDay: nextDay.isAfter(controller.lastAllowedDate)
-                ? null
-                : () => _selectDate(nextDay),
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              AvailabilityEmpty(
+                onNextDay: nextDay.isAfter(controller.lastAllowedDate)
+                    ? null
+                    : () => _selectDate(nextDay),
+              ),
+              if (state.errorMessage != null)
+                Padding(
+                  padding: const EdgeInsets.all(AppSpacing.sm),
+                  child: Text(
+                    'Falha na atualização. '
+                    'Os horários podem estar desatualizados.',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ),
+            ],
           );
         }
 
@@ -109,6 +238,9 @@ class _PublicHomePageState extends ConsumerState<PublicHomePage> {
           selectedCourtId: _selectedCourt?.courtId,
           selectedStartsAt: _selectedSlot?.startsAt,
           onSlotSelected: _selectSlot,
+          isRefreshing: state.isRefreshing,
+          lastUpdatedAt: state.lastUpdatedAt,
+          errorMessage: state.errorMessage,
         );
     }
   }
@@ -123,6 +255,23 @@ class _PublicHomePageState extends ConsumerState<PublicHomePage> {
 
     final controller = ref.read(availabilityControllerProvider.notifier);
 
+    ref.listen<AvailabilityState>(availabilityControllerProvider, (
+      previous,
+      next,
+    ) {
+      if (next.status != AvailabilityStatus.success) {
+        return;
+      }
+
+      final availability = next.availability;
+
+      if (availability == null) return;
+
+      if (previous?.availability != availability) {
+        _validateSelection(availability);
+      }
+    });
+
     final availabilityContent = _buildAvailability(
       availabilityState,
       controller,
@@ -136,6 +285,28 @@ class _PublicHomePageState extends ConsumerState<PublicHomePage> {
       court: canShowSelection ? _selectedCourt : null,
       slot: canShowSelection ? _selectedSlot : null,
       onContinue: _continueBooking,
+    );
+
+    final canContinue =
+        !availabilityState.isRefreshing &&
+        availabilityState.errorMessage == null;
+
+    final summaryContent = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AbsorbPointer(absorbing: !canContinue, child: summary),
+        if (!canContinue && _selectedSlot != null)
+          Padding(
+            padding: const EdgeInsets.all(AppSpacing.sm),
+            child: Text(
+              availabilityState.isRefreshing
+                  ? 'Aguarde a atualização dos horários.'
+                  : 'Aguarde uma atualização bem-sucedida '
+                        'para continuar.',
+              textAlign: TextAlign.center,
+            ),
+          ),
+      ],
     );
 
     return AppPage(
@@ -181,7 +352,7 @@ class _PublicHomePageState extends ConsumerState<PublicHomePage> {
                     children: [
                       Expanded(child: availabilityContent),
                       const SizedBox(width: AppSpacing.lg),
-                      SizedBox(width: 300, child: summary),
+                      SizedBox(width: 300, child: summaryContent),
                     ],
                   );
                 }
@@ -191,7 +362,7 @@ class _PublicHomePageState extends ConsumerState<PublicHomePage> {
                   children: [
                     availabilityContent,
                     const SizedBox(height: AppSpacing.lg),
-                    summary,
+                    summaryContent,
                   ],
                 );
               },
